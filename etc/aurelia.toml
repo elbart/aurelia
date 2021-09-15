@@ -8,3 +8,8 @@ port = 5432
 database_name = "realizor"
 username = "realizor"
 password = "realizor"
+
+[application]
+jwt_secret = "TQgF1LMRwGVyH4XLZhak3hnlvxVCtWuuCY0E8GwcEdZpds2vBe5F47U3wEij32sPqu7va7g8rIVj5aoaxQKnzYEd8eobhcjmKjUcGNRzPEYZ4CwJEOMlcAck"
+jwt_expiration_offset_seconds = 1000000 # expiration in seconds
+jwt_header_name = "authorization"

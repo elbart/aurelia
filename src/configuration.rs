@@ -22,11 +22,20 @@ pub struct Http {
     pub port: u16,
 }
 
+/// Application configuration
+#[derive(Debug, Deserialize, Clone)]
+pub struct Application {
+    pub jwt_secret: String,
+    pub jwt_expiration_offset_seconds: usize,
+    pub jwt_header_name: String,
+}
+
 /// Central configuration object which reads:
 #[derive(Debug, Deserialize, Clone)]
 pub struct Configuration {
     pub database: Database,
     pub http: Http,
+    pub application: Application,
 }
 
 fn ip_string_to_octets<'de, D>(deserializer: D) -> Result<Ipv4Addr, D::Error>

@@ -8,20 +8,19 @@ use crate::database::init_connection;
 
 use crate::routes;
 
-pub type ApplicationState = Arc<AppState>;
-
-#[derive(Debug)]
-pub struct AppState {
-    pub configuration: Configuration,
-    pub rbatis: Rbatis,
+/// Central read-only (except of rbatis) application state struct.
+#[derive(Clone, Debug)]
+pub struct ApplicationState {
+    pub configuration: Arc<Configuration>,
+    pub rbatis: Arc<Rbatis>,
 }
 
-impl AppState {
+impl ApplicationState {
     pub fn new(cfg: Configuration, rbatis: Rbatis) -> ApplicationState {
-        Arc::new(Self {
-            configuration: cfg,
-            rbatis,
-        })
+        Self {
+            configuration: Arc::new(cfg),
+            rbatis: Arc::new(rbatis),
+        }
     }
 }
 
@@ -30,11 +29,13 @@ pub struct Application {}
 impl Application {
     /// External Entry Point for the application, which usually get's run from main
     pub async fn init() {
+        // initialize tracing
+        tracing_subscriber::fmt::init();
         let cfg = configuration::Configuration::new().unwrap();
         tracing::info!("Parsed configuration: {:?}", cfg);
 
         let rb = init_connection(&cfg).await;
-        let app_state = AppState::new(cfg.clone(), rb);
+        let app_state = ApplicationState::new(cfg.clone(), rb);
         let router = routes::AureliaRouter::configure(app_state).with_auth_routes();
 
         // run our app with hyper

@@ -25,9 +25,16 @@ pub struct Http {
 /// Application configuration
 #[derive(Debug, Deserialize, Clone)]
 pub struct Application {
+    pub auth: Auth,
+}
+
+/// Authentication / Authorization configuration
+#[derive(Debug, Deserialize, Clone)]
+pub struct Auth {
     pub jwt_secret: String,
     pub jwt_expiration_offset_seconds: usize,
     pub jwt_header_name: String,
+    pub path_prefix: String,
 }
 
 /// Central configuration object which reads:

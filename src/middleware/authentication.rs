@@ -1,4 +1,7 @@
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use anyhow::{anyhow, Result};
 use axum::http::{Request, Response};
@@ -12,7 +15,7 @@ use crate::configuration::{Application, Configuration};
 #[derive(Clone)]
 pub struct JwtAuthenticationMiddleware<S> {
     pub(crate) inner: S,
-    pub(crate) configuration: Configuration,
+    pub(crate) configuration: Arc<Configuration>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -90,9 +93,9 @@ fn jwt_authentication<ReqBody>(
 ) -> Result<JwtClaims> {
     tracing::debug!(
         "Trying to authenticate JWT. Reading from HTTP header: {}",
-        &configuration.jwt_header_name
+        &configuration.auth.jwt_header_name
     );
-    match req.headers().get(&configuration.jwt_header_name) {
+    match req.headers().get(&configuration.auth.jwt_header_name) {
         Some(value) => match value
             .to_str()
             .unwrap_or("")
@@ -106,7 +109,7 @@ fn jwt_authentication<ReqBody>(
 
                 let token = decode::<JwtClaims>(
                     &token,
-                    &DecodingKey::from_secret(&configuration.jwt_secret.as_ref()),
+                    &DecodingKey::from_secret(&configuration.auth.jwt_secret.as_ref()),
                     &Validation::default(),
                 )?;
 

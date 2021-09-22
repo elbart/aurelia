@@ -1,5 +1,3 @@
-
-
 use axum::{
     handler::{get, post},
     routing::BoxRoute,
@@ -8,7 +6,7 @@ use axum::{
 use tower::layer::layer_fn;
 
 use crate::{
-    application::{ApplicationState},
+    application::ApplicationState,
     handler::{
         authentication::{claims, oidc_client_login},
         create_user, get_tags, root,
@@ -24,18 +22,12 @@ pub struct AureliaRouter {
 
 impl AureliaRouter {
     /// Router definitions should go here.
-    /// This returns a ``BoxRoute``, because it's otherwise hard to guess the
-    /// type before.
     pub(crate) fn configure(state: ApplicationState) -> AureliaRouter {
         Self {
             router: Router::new()
                 .route("/", get(root))
                 .route("/users", post(create_user))
                 .route("/tags", get(get_tags))
-                .layer(layer_fn(|inner| JwtAuthenticationMiddleware {
-                    inner,
-                    configuration: state.configuration.clone(),
-                }))
                 .layer(AddExtensionLayer::new(state.clone()))
                 .boxed(),
             state,
@@ -43,7 +35,6 @@ impl AureliaRouter {
     }
 
     /// Takes existing AureliaRouter and adds authentication routes
-    /// TODO: configure /auth mountpoint
     pub(crate) fn with_auth_routes(mut self) -> AureliaRouter {
         let ar: Router<BoxRoute> = Router::new()
             .route("/self", get(claims))
@@ -55,8 +46,23 @@ impl AureliaRouter {
             .layer(AddExtensionLayer::new(None::<JwtClaims>))
             .boxed();
 
-        self.router = self.router.nest("/auth", ar).boxed();
+        self.router = self
+            .router
+            .nest(&self.state.configuration.application.auth.path_prefix, ar)
+            .boxed();
 
+        self
+    }
+
+    /// Optional extra routes given from the outside, mounted in the
+    /// routing tree.
+    #[allow(dead_code)]
+    pub(crate) fn with_extra_routes(
+        mut self,
+        routes: Router<BoxRoute>,
+        path_prefix: String,
+    ) -> Self {
+        self.router = self.router.nest(&path_prefix, routes).boxed();
         self
     }
 

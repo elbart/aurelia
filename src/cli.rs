@@ -39,12 +39,12 @@ async fn main() -> Result<()> {
         Command::CreateJWT => {
             let claims = JwtClaims::new(
                 Uuid::new_v4().to_string(),
-                cfg.application.jwt_expiration_offset_seconds,
+                cfg.application.auth.jwt_expiration_offset_seconds,
             );
             let token = encode(
                 &Header::default(),
                 &claims,
-                &EncodingKey::from_secret(cfg.application.jwt_secret.as_ref()),
+                &EncodingKey::from_secret(cfg.application.auth.jwt_secret.as_ref()),
             )?;
             println!("{}", &token);
         }

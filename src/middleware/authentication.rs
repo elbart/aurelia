@@ -65,7 +65,10 @@ where
             match jwt_authentication(&req, &app_cfg) {
                 Ok(claims) => {
                     tracing::info!("Successfully authenticated JWT with claims: {:?}", claims);
-                    req.extensions_mut().insert(claims.clone());
+                    req.extensions_mut()
+                        .get_mut::<Option<JwtClaims>>()
+                        .unwrap_or(&mut None)
+                        .replace(claims);
                 }
                 Err(e) => {
                     tracing::warn!("JWT authentication failed: {}", e);

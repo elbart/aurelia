@@ -1,9 +1,9 @@
-use std::sync::Arc;
-
 use axum::{extract::Extension, http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 
 use crate::application::ApplicationState;
+
+pub mod authentication;
 
 // basic handler that responds with a static string
 pub async fn root() -> &'static str {
@@ -39,7 +39,7 @@ pub struct User {
     username: String,
 }
 
-pub async fn get_tags(Extension(_state): Extension<Arc<ApplicationState>>) -> impl IntoResponse {
+pub async fn get_tags(Extension(_state): Extension<ApplicationState>) -> impl IntoResponse {
     // (StatusCode::OK, Json(model::get_tags(state.0.clone())))
     "Bla".to_string()
 }

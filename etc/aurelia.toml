@@ -26,4 +26,4 @@ client_secret = "sy85cgPqpL5Q4rm"
 client_scopes = ["openid"]
 client_role = "web"
 issuer_url = "https://aaa.mew-tech.io/op"
-redirect_url = "http://localhost:3000/auth/oidc_login_cb/"
+redirect_url = "http://localhost:3000/auth/oidc_login_cb/sh_stage"

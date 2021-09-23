@@ -1,27 +1,30 @@
+use std::collections::HashMap;
 use std::str::FromStr;
 
-use axum::extract::Path;
+use axum::{
+    extract::{Path, Query},
+    http::{StatusCode, Uri},
+    response::Redirect,
+    {extract::Extension, response::IntoResponse, Json},
+};
 
-use axum::http::{StatusCode, Uri};
-use axum::response::Redirect;
-use axum::{extract::Extension, response::IntoResponse, Json};
-use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
-use openidconnect::{ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce, RedirectUrl};
+use openidconnect::{
+    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
+    reqwest::async_http_client,
+    AuthorizationCode, ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce, RedirectUrl,
+};
 
-use openidconnect::reqwest::async_http_client;
-
-use crate::application::ApplicationState;
-use crate::middleware::authentication::JwtClaims;
+use crate::{application::ApplicationState, middleware::authentication::JwtClaims};
 
 pub async fn claims(Extension(claims): Extension<Option<JwtClaims>>) -> impl IntoResponse {
     Json(claims.clone())
 }
 
-pub async fn oidc_client_login(
-    Path(provider_name): Path<String>,
-    Extension(_claims): Extension<Option<JwtClaims>>,
-    Extension(state): Extension<ApplicationState>,
-) -> Result<Redirect, StatusCode> {
+/// Oidc client creation helper
+async fn oidc_client(
+    provider_name: String,
+    state: ApplicationState,
+) -> Result<CoreClient, StatusCode> {
     let provider = state
         .configuration
         .application
@@ -60,8 +63,18 @@ pub async fn oidc_client_login(
             StatusCode::INTERNAL_SERVER_ERROR
         })?,
     );
-    tracing::debug!("Oidc Client Information: {:?}", client);
 
+    tracing::debug!("Oidc Client Information: {:?}", client);
+    Ok(client)
+}
+
+/// Callback handler for openid connect
+pub async fn oidc_client_login(
+    Path(provider_name): Path<String>,
+    Extension(_claims): Extension<Option<JwtClaims>>,
+    Extension(state): Extension<ApplicationState>,
+) -> Result<Redirect, StatusCode> {
+    let client = oidc_client(provider_name, state).await?;
     let (auth_url, _csrf_token, _nonce) = client
         .authorize_url(
             CoreAuthenticationFlow::AuthorizationCode,
@@ -76,4 +89,31 @@ pub async fn oidc_client_login(
             StatusCode::INTERNAL_SERVER_ERROR
         },
     )?))
+}
+
+pub async fn oidc_client_login_cb(
+    Query(query): Query<HashMap<String, String>>,
+    Path(provider_name): Path<String>,
+    Extension(_claims): Extension<Option<JwtClaims>>,
+    Extension(state): Extension<ApplicationState>,
+) -> Result<StatusCode, StatusCode> {
+    tracing::info!("{:?}", query);
+    let client = oidc_client(provider_name, state).await?;
+    let code = query.get("code").ok_or_else(|| {
+        tracing::error!("Missing request query parameter 'code'");
+        StatusCode::BAD_REQUEST
+    })?;
+
+    let token_response = client
+        .exchange_code(AuthorizationCode::new(code.to_string()))
+        .request_async(async_http_client)
+        .await
+        .map_err(|e| {
+            tracing::error!("Request Token Error received: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    tracing::info!("Got valid Token Response: {:?}", token_response);
+
+    Ok(StatusCode::OK)
 }

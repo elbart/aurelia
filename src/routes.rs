@@ -8,7 +8,7 @@ use tower::layer::layer_fn;
 use crate::{
     application::ApplicationState,
     handler::{
-        authentication::{claims, oidc_client_login},
+        authentication::{claims, oidc_client_login, oidc_client_login_cb},
         create_user, get_tags, root,
     },
     middleware::authentication::{JwtAuthenticationMiddleware, JwtClaims},
@@ -39,6 +39,7 @@ impl AureliaRouter {
         let ar: Router<BoxRoute> = Router::new()
             .route("/self", get(claims))
             .route("/oidc_login/:provider_name", get(oidc_client_login))
+            .route("/oidc_login_cb/:provider_name", get(oidc_client_login_cb))
             .layer(layer_fn(|inner| JwtAuthenticationMiddleware {
                 inner,
                 configuration: self.state.configuration.clone(),

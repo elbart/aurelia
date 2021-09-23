@@ -1,4 +1,4 @@
-use std::net::Ipv4Addr;
+use std::{collections::HashMap, net::Ipv4Addr};
 
 // use anyhow::Result;
 use config::{Config, ConfigError, Environment, File};
@@ -28,6 +28,8 @@ pub struct Application {
     pub auth: Auth,
 }
 
+type OidcProviderName = String;
+
 /// Authentication / Authorization configuration
 #[derive(Debug, Deserialize, Clone)]
 pub struct Auth {
@@ -35,6 +37,20 @@ pub struct Auth {
     pub jwt_expiration_offset_seconds: usize,
     pub jwt_header_name: String,
     pub path_prefix: String,
+    pub oidc: HashMap<OidcProviderName, Oidc>,
+}
+
+// OpenID client configuration
+#[derive(Debug, Deserialize, Clone)]
+pub struct Oidc {
+    pub provider_name: String,
+    pub client_name: String,
+    pub client_id: String,
+    pub client_secret: String,
+    pub client_scopes: Vec<String>,
+    pub client_role: String,
+    pub issuer_url: String,
+    pub redirect_url: String,
 }
 
 /// Central configuration object which reads:

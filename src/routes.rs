@@ -38,12 +38,13 @@ impl AureliaRouter {
     pub(crate) fn with_auth_routes(mut self) -> AureliaRouter {
         let ar: Router<BoxRoute> = Router::new()
             .route("/self", get(claims))
-            .route("/oidc_login", get(oidc_client_login))
+            .route("/oidc_login/:provider_name", get(oidc_client_login))
             .layer(layer_fn(|inner| JwtAuthenticationMiddleware {
                 inner,
                 configuration: self.state.configuration.clone(),
             }))
             .layer(AddExtensionLayer::new(None::<JwtClaims>))
+            .layer(AddExtensionLayer::new(self.state.clone()))
             .boxed();
 
         self.router = self

@@ -1,8 +1,11 @@
+use std::sync::Arc;
+
 use axum::{
     handler::{get, post},
     routing::BoxRoute,
     AddExtensionLayer, Router,
 };
+use rbatis::rbatis::Rbatis;
 use tower::layer::layer_fn;
 
 use crate::{
@@ -14,15 +17,15 @@ use crate::{
     middleware::authentication::{JwtAuthenticationMiddleware, JwtClaims},
 };
 
-#[derive(Debug)]
-pub struct AureliaRouter {
+#[derive(Debug, Clone)]
+pub struct ApplicationRouter {
     router: Router<BoxRoute>,
     state: ApplicationState,
 }
 
-impl AureliaRouter {
+impl ApplicationRouter {
     /// Router definitions should go here.
-    pub(crate) fn configure(state: ApplicationState) -> AureliaRouter {
+    pub(crate) fn configure(state: ApplicationState) -> ApplicationRouter {
         Self {
             router: Router::new()
                 .route("/", get(root))
@@ -35,7 +38,7 @@ impl AureliaRouter {
     }
 
     /// Takes existing AureliaRouter and adds authentication routes
-    pub(crate) fn with_auth_routes(mut self) -> AureliaRouter {
+    pub(crate) fn with_auth_routes(mut self) -> ApplicationRouter {
         let ar: Router<BoxRoute> = Router::new()
             .route("/self", get(claims))
             .route("/oidc_login/:provider_name", get(oidc_client_login))
@@ -68,7 +71,7 @@ impl AureliaRouter {
         self
     }
 
-    pub fn get_routes(self) -> Router<BoxRoute> {
-        self.router.boxed()
+    pub fn finalize(self, rbatis: Arc<Rbatis>) -> Router<BoxRoute> {
+        self.router.layer(AddExtensionLayer::new(rbatis)).boxed()
     }
 }

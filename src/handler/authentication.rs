@@ -31,7 +31,10 @@ async fn oidc_client(
         .auth
         .oidc
         .get(&provider_name)
-        .ok_or_else(|| StatusCode::NOT_FOUND)?;
+        .ok_or_else(|| {
+            tracing::warn!("Provider not found: {}", provider_name);
+            StatusCode::NOT_FOUND
+        })?;
 
     // Use OpenID Connect Discovery to fetch the provider metadata.
     let provider_metadata = CoreProviderMetadata::discover_async(

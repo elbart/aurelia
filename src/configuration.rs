@@ -28,8 +28,6 @@ pub struct Application {
     pub auth: Auth,
 }
 
-type OidcProviderName = String;
-
 /// Authentication / Authorization configuration
 #[derive(Debug, Deserialize, Clone)]
 pub struct Auth {
@@ -37,7 +35,7 @@ pub struct Auth {
     pub jwt_expiration_offset_seconds: usize,
     pub jwt_header_name: String,
     pub path_prefix: String,
-    pub oidc: HashMap<OidcProviderName, Oidc>,
+    pub oidc: HashMap<String, Oidc>,
 }
 
 // OpenID client configuration
@@ -88,5 +86,9 @@ impl Configuration {
             self.database.port,
             self.database.database_name,
         )
+    }
+
+    pub fn get_oidc_provider(&self, name: &str) -> Option<Oidc> {
+        self.application.auth.oidc.get(name).cloned()
     }
 }

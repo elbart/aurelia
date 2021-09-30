@@ -4,10 +4,11 @@ use std::str::FromStr;
 use axum::{
     extract::{Path, Query},
     http::{StatusCode, Uri},
-    response::Redirect,
+    response::{Headers, Redirect},
     {extract::Extension, response::IntoResponse, Json},
 };
 
+use hyper::header::{HeaderName, SET_COOKIE};
 use openidconnect::{
     core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
     reqwest::async_http_client,
@@ -27,10 +28,7 @@ async fn oidc_client(
 ) -> Result<CoreClient, StatusCode> {
     let provider = state
         .configuration
-        .application
-        .auth
-        .oidc
-        .get(&provider_name)
+        .get_oidc_provider(&provider_name)
         .ok_or_else(|| {
             tracing::warn!("Provider not found: {}", provider_name);
             StatusCode::NOT_FOUND
@@ -99,7 +97,7 @@ pub async fn oidc_client_login_cb(
     Path(provider_name): Path<String>,
     Extension(_claims): Extension<Option<JwtClaims>>,
     Extension(state): Extension<ApplicationState>,
-) -> Result<StatusCode, StatusCode> {
+) -> Result<(Headers<Vec<(HeaderName, std::string::String)>>, StatusCode), StatusCode> {
     tracing::info!("{:?}", query);
     let client = oidc_client(provider_name, state).await?;
     let code = query.get("code").ok_or_else(|| {
@@ -116,7 +114,21 @@ pub async fn oidc_client_login_cb(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
+    let h = Headers(vec![(
+        SET_COOKIE,
+        format!(
+            "{}={}; path=/; HttpOnly",
+            "id_token",
+            token_response
+                .extra_fields()
+                .id_token()
+                .cloned()
+                .unwrap()
+                .to_string()
+        ),
+    )]);
+
     tracing::info!("Got valid Token Response: {:?}", token_response);
 
-    Ok(StatusCode::OK)
+    Ok((h, StatusCode::OK))
 }

@@ -37,7 +37,7 @@ impl ApplicationRouter {
         }
     }
 
-    /// Takes existing AureliaRouter and adds authentication routes
+    /// Takes existing ApplicationRouter and adds authentication routes
     pub(crate) fn with_auth_routes(mut self) -> ApplicationRouter {
         let ar: Router<BoxRoute> = Router::new()
             .route("/self", get(claims))

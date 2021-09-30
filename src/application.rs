@@ -1,13 +1,10 @@
-
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use axum::routing::{BoxRoute, IntoMakeService};
 use axum::Server;
 
-
 use hyper::server::conn::AddrIncoming;
-
 
 use crate::configuration::{self, Configuration};
 use crate::database::init_connection;
@@ -36,8 +33,6 @@ pub struct Application {
 impl Application {
     /// External Entry Point for the application, which usually get's run from main
     pub async fn init(cfg: Option<configuration::Configuration>) -> anyhow::Result<Self> {
-        // initialize tracing
-        tracing_subscriber::fmt::init();
         let app_state;
         if cfg.is_none() {
             app_state = ApplicationState::new(configuration::Configuration::new()?);

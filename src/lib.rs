@@ -7,3 +7,4 @@ pub mod database;
 mod handler;
 pub mod middleware;
 mod routes;
+pub mod telemetry;

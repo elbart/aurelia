@@ -1,5 +1,5 @@
 use anyhow::Result;
-use aurelia::{configuration, middleware::authentication::JwtClaims};
+use aurelia::{configuration, middleware::authentication::JwtClaims, telemetry};
 use jsonwebtoken::{encode, EncodingKey, Header};
 use refinery::config::{Config, ConfigDbType};
 use structopt::StructOpt;
@@ -23,6 +23,7 @@ pub enum Command {
 #[tokio::main]
 async fn main() -> Result<()> {
     let opt = Cli::from_args();
+    telemetry::init_subscriber();
     tracing::info!("Given command / subcommand + args are: {:?}", opt);
     let cfg = configuration::Configuration::new()?;
 

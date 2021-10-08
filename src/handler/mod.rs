@@ -1,7 +1,8 @@
-use axum::{extract::Extension, http::StatusCode, response::IntoResponse, Json};
-use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
-use crate::application::ApplicationState;
+use axum::{extract::Extension, http::StatusCode, response::IntoResponse, Json};
+use rbatis::rbatis::Rbatis;
+use serde::{Deserialize, Serialize};
 
 pub mod authentication;
 
@@ -39,7 +40,11 @@ pub struct User {
     username: String,
 }
 
-pub async fn get_tags(Extension(_state): Extension<ApplicationState>) -> impl IntoResponse {
+use crate::database::model::Tag;
+use crate::rbatis::crud::CRUD;
+
+pub async fn get_tags(Extension(rb): Extension<Arc<Rbatis>>) -> impl IntoResponse {
     // (StatusCode::OK, Json(model::get_tags(state.0.clone())))
-    "Bla".to_string()
+    let res: Vec<Tag> = rb.fetch_list().await.unwrap();
+    Json(res)
 }

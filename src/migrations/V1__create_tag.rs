@@ -1,12 +1,28 @@
-use barrel::{backend::Pg, types, Migration};
+use std::rc::Rc;
+
+use sql_press::{
+    change::ChangeSet,
+    column::{uuid, varchar, DefaultConstraint},
+    sql_dialect::postgres::Postgres,
+};
 
 pub fn migration() -> String {
-    let mut m = Migration::new();
+    let mut cs = ChangeSet::new();
 
-    m.create_table("tag", |t| {
-        t.add_column("id", types::uuid().primary(true));
-        t.add_column("name", types::varchar(255).nullable(false).unique(true));
+    cs.run_script("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";");
+
+    cs.create_table("tag", |t| {
+        t.add_column(
+            uuid("id")
+                .primary(true)
+                .default(DefaultConstraint::Plain("uuid_generate_v4()".into()))
+                .build(),
+        );
+        t.add_column(varchar("name", None).build());
     });
 
-    m.make::<Pg>()
+    let ddl = cs.get_ddl(Rc::new(Postgres::new()));
+    let f = file!();
+    tracing::info!("Migration for file: {}\n{}", f, ddl);
+    ddl
 }

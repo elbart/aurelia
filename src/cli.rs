@@ -5,7 +5,7 @@ use refinery::config::{Config, ConfigDbType};
 use structopt::StructOpt;
 use uuid::Uuid;
 
-mod migrations;
+mod database_migrations;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "CLI client", about = "Command line interface")]
@@ -35,7 +35,9 @@ async fn main() -> Result<()> {
                 .set_db_name(&cfg.database.database_name)
                 .set_db_user(&cfg.database.username)
                 .set_db_pass(&cfg.database.password);
-            migrations::runner().run_async(&mut conn).await?;
+            database_migrations::migrations::runner()
+                .run_async(&mut conn)
+                .await?;
         }
         Command::CreateJWT => {
             let claims = JwtClaims::new(

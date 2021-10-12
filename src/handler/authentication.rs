@@ -18,7 +18,7 @@ use openidconnect::{
 use crate::{application::ApplicationState, middleware::authentication::JwtClaims};
 
 pub async fn claims(Extension(claims): Extension<Option<JwtClaims>>) -> impl IntoResponse {
-    Json(claims.clone())
+    Json(claims)
 }
 
 /// Oidc client creation helper

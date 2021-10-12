@@ -5,14 +5,14 @@ use axum::{
     routing::BoxRoute,
     AddExtensionLayer, Router,
 };
-use rbatis::rbatis::Rbatis;
+use sea_orm::DatabaseConnection;
 use tower::layer::layer_fn;
 
 use crate::{
     application::ApplicationState,
     handler::{
         authentication::{claims, oidc_client_login, oidc_client_login_cb},
-        create_user, get_tags, root,
+        create_user, get_recipes, get_tags, root,
     },
     middleware::authentication::{JwtAuthenticationMiddleware, JwtClaims},
 };
@@ -31,7 +31,13 @@ impl ApplicationRouter {
                 .route("/", get(root))
                 .route("/users", post(create_user))
                 .route("/tags", get(get_tags))
+                .route("/recipes", get(get_recipes))
                 .layer(AddExtensionLayer::new(state.clone()))
+                .layer(layer_fn(|inner| JwtAuthenticationMiddleware {
+                    inner,
+                    configuration: state.configuration.clone(),
+                }))
+                .layer(AddExtensionLayer::new(None::<JwtClaims>))
                 .boxed(),
             state,
         }
@@ -71,7 +77,7 @@ impl ApplicationRouter {
         self
     }
 
-    pub fn finalize(self, rbatis: Arc<Rbatis>) -> Router<BoxRoute> {
-        self.router.layer(AddExtensionLayer::new(rbatis)).boxed()
+    pub fn finalize(self, db: Arc<DatabaseConnection>) -> Router<BoxRoute> {
+        self.router.layer(AddExtensionLayer::new(db)).boxed()
     }
 }

@@ -42,7 +42,8 @@ impl Application {
             tracing::info!("Got external configuration: {:?}", app_state.configuration);
         }
 
-        let rb = init_connection(&app_state.configuration).await;
+        let db = init_connection(&app_state.configuration).await;
+        let db = Arc::new(db);
 
         // run our app with hyper
         let addr = SocketAddr::from((
@@ -51,7 +52,7 @@ impl Application {
         ));
         let router = routes::ApplicationRouter::configure(app_state.clone())
             .with_auth_routes()
-            .finalize(Arc::new(rb));
+            .finalize(db);
 
         Ok(Self {
             state: app_state,

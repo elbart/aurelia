@@ -64,7 +64,7 @@ where
         let app_cfg = self.configuration.application.clone();
 
         Box::pin(async move {
-            tracing::debug!("JwtAuthenticationMiddleware before request processing...");
+            tracing::trace!("JwtAuthenticationMiddleware before request processing...");
             match jwt_authentication(&req, &app_cfg) {
                 Ok(claims) => {
                     tracing::info!("Successfully authenticated JWT with claims: {:?}", claims);
@@ -74,11 +74,14 @@ where
                         .replace(claims);
                 }
                 Err(e) => {
+                    req.extensions_mut()
+                        .get::<Option<JwtClaims>>()
+                        .replace(&None);
                     tracing::warn!("JWT authentication failed: {}", e);
                 }
             }
             let res: Response<ResBody> = inner.call(req).await?;
-            tracing::debug!("JwtAuthenticationMiddleware after request processing...");
+            tracing::trace!("JwtAuthenticationMiddleware after request processing...");
 
             Ok(res)
         })
@@ -108,8 +111,8 @@ fn jwt_authentication<ReqBody>(
                 tracing::debug!("Found authorization header. Trying to find Bearer JWT.");
 
                 let token = decode::<JwtClaims>(
-                    &token,
-                    &DecodingKey::from_secret(&configuration.auth.jwt_secret.as_ref()),
+                    token,
+                    &DecodingKey::from_secret(configuration.auth.jwt_secret.as_ref()),
                     &Validation::default(),
                 )?;
 

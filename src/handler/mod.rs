@@ -1,13 +1,9 @@
 use std::sync::Arc;
 
 use axum::{extract::Extension, http::StatusCode, response::IntoResponse, Json};
-use sea_orm::{entity::*, DatabaseConnection};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    database::entity::recipe as Recipe, database::entity::tag as Tag,
-    middleware::authentication::JwtClaims,
-};
+use crate::{database::DbPool, middleware::authentication::JwtClaims};
 
 pub mod authentication;
 
@@ -45,18 +41,15 @@ pub struct User {
     username: String,
 }
 
-pub async fn get_tags(Extension(db): Extension<Arc<DatabaseConnection>>) -> impl IntoResponse {
-    let tags = Tag::Entity::find().all(&db).await.unwrap();
-
-    (StatusCode::OK, Json(tags))
+pub async fn get_tags(Extension(db): Extension<Arc<DbPool>>) -> impl IntoResponse {
+    (StatusCode::OK, Json(""))
 }
 
 pub async fn get_recipes(
-    Extension(db): Extension<Arc<DatabaseConnection>>,
+    Extension(db): Extension<Arc<DbPool>>,
     Extension(claims): Extension<Option<JwtClaims>>,
 ) -> impl IntoResponse {
     assert!(claims.is_some());
-    let recipes = Recipe::Entity::find().all(&db).await.unwrap();
 
-    (StatusCode::OK, Json(recipes))
+    (StatusCode::OK, Json(""))
 }

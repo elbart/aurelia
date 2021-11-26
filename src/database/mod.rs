@@ -1,8 +1,11 @@
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
+use std::sync::Arc;
 
 use crate::configuration::Configuration;
 
-pub type DbPool = Pool<Postgres>;
+pub mod entity;
+
+pub type DbPool = Arc<Pool<Postgres>>;
 
 // auto generated sea orm models
 pub async fn init_connection(configuration: &Configuration) -> Pool<Postgres> {

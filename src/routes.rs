@@ -11,7 +11,7 @@ use crate::{
     application::ApplicationState,
     handler::{
         authentication::{claims, oidc_client_login, oidc_client_login_cb},
-        create_user, get_recipes, get_tags, root,
+        create_user, get_ingredients, get_recipes, get_tag, get_tags, root,
     },
     middleware::authentication::{JwtAuthenticationMiddleware, JwtClaims},
 };
@@ -29,8 +29,10 @@ impl ApplicationRouter {
             router: Router::new()
                 .route("/", get(root))
                 .route("/users", post(create_user))
-                .route("/tags", get(get_tags))
-                .route("/recipes", get(get_recipes))
+                .route("/api/tags", get(get_tags))
+                .route("/api/tag/:id", get(get_tag))
+                .route("/api/recipes", get(get_recipes))
+                .route("/api/ingredients", get(get_ingredients))
                 .layer(AddExtensionLayer::new(state.clone()))
                 .layer(layer_fn(|inner| JwtAuthenticationMiddleware {
                     inner,

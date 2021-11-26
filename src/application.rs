@@ -1,8 +1,8 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use axum::routing::{BoxRoute, IntoMakeService};
-use axum::Server;
+use axum::routing::IntoMakeService;
+use axum::{Router, Server};
 
 use hyper::server::conn::AddrIncoming;
 
@@ -27,7 +27,7 @@ impl ApplicationState {
 
 pub struct Application {
     pub state: ApplicationState,
-    server: Server<AddrIncoming, IntoMakeService<BoxRoute>>,
+    server: Server<AddrIncoming, IntoMakeService<Router>>,
 }
 
 impl Application {

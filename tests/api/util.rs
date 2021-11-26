@@ -1,5 +1,12 @@
-use aurelia::{application::Application, configuration, telemetry::init_subscriber};
+use aurelia::{
+    application::Application,
+    configuration::{self, Configuration},
+    middleware::authentication::JwtClaims,
+    telemetry::init_subscriber,
+};
+use jsonwebtoken::{encode, EncodingKey, Header};
 use once_cell::sync::Lazy;
+use uuid::Uuid;
 
 use crate::client::TestClient;
 
@@ -26,4 +33,18 @@ pub async fn get_tc() -> TestClient {
     spawn_test_application()
         .await
         .expect("Unable to create test application")
+}
+
+pub async fn create_jwt(cfg: &Configuration) -> String {
+    let claims = JwtClaims::new(
+        Uuid::new_v4().to_string(),
+        cfg.application.auth.jwt_expiration_offset_seconds,
+    );
+
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(cfg.application.auth.jwt_secret.as_ref()),
+    )
+    .unwrap()
 }

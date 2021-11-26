@@ -1,11 +1,17 @@
-use std::sync::Arc;
-
-use axum::{extract::Extension, http::StatusCode, response::IntoResponse, Json};
-use sea_orm::{entity::*, DatabaseConnection};
+use axum::{
+    extract::{Extension, Path},
+    http::StatusCode,
+    response::IntoResponse,
+    Json,
+};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::{
-    database::entity::recipe as Recipe, database::entity::tag as Tag,
+    database::{
+        entity::{ingredient, recipe, tag},
+        DbPool,
+    },
     middleware::authentication::JwtClaims,
 };
 
@@ -45,18 +51,36 @@ pub struct User {
     username: String,
 }
 
-pub async fn get_tags(Extension(db): Extension<Arc<DatabaseConnection>>) -> impl IntoResponse {
-    let tags = Tag::Entity::find().all(&db).await.unwrap();
+pub async fn get_tags(
+    Extension(claims): Extension<Option<JwtClaims>>,
+    Extension(db): Extension<DbPool>,
+) -> impl IntoResponse {
+    assert!(claims.is_some());
+    (StatusCode::OK, Json(tag::get_tags(None, db).await))
+}
 
-    (StatusCode::OK, Json(tags))
+pub async fn get_tag(
+    Path(id): Path<Uuid>,
+    Extension(claims): Extension<Option<JwtClaims>>,
+    Extension(db): Extension<DbPool>,
+) -> impl IntoResponse {
+    assert!(claims.is_some());
+    (StatusCode::OK, Json(tag::get_tag_by_id(id, db).await))
+}
+
+pub async fn get_ingredients(
+    Extension(claims): Extension<Option<JwtClaims>>,
+    Extension(db): Extension<DbPool>,
+) -> impl IntoResponse {
+    assert!(claims.is_some());
+    (StatusCode::OK, Json(ingredient::get_ingredients(db).await))
 }
 
 pub async fn get_recipes(
-    Extension(db): Extension<Arc<DatabaseConnection>>,
+    Extension(db): Extension<DbPool>,
     Extension(claims): Extension<Option<JwtClaims>>,
 ) -> impl IntoResponse {
     assert!(claims.is_some());
-    let recipes = Recipe::Entity::find().all(&db).await.unwrap();
 
-    (StatusCode::OK, Json(recipes))
+    (StatusCode::OK, Json(recipe::get_recipes(db).await))
 }

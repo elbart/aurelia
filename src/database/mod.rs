@@ -1,18 +1,22 @@
-use sea_orm::{Database, DatabaseConnection};
+use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
+use std::sync::Arc;
 
 use crate::configuration::Configuration;
 
-// auto generated sea orm models
 pub mod entity;
 
-pub async fn init_connection(configuration: &Configuration) -> DatabaseConnection {
-    let db: DatabaseConnection =
-        Database::connect(&configuration.get_db_url())
-            .await
-            .expect(&format!(
-                "Error connecting to database with URL: {}",
-                &configuration.get_db_url()
-            ));
+pub type DbPool = Arc<Pool<Postgres>>;
 
-    db
+// auto generated sea orm models
+pub async fn init_connection(configuration: &Configuration) -> Pool<Postgres> {
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&configuration.get_db_url())
+        .await
+        .expect(&format!(
+            "Error connecting to database with URL: {}",
+            &configuration.get_db_url()
+        ));
+
+    pool
 }

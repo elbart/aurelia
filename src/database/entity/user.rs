@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::database::DbPool;
 
-#[derive(Debug, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Serialize, Deserialize, FromRow, Clone)]
 pub struct User {
     pub id: Uuid,
     pub email: String,

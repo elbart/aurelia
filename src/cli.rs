@@ -1,9 +1,7 @@
 use anyhow::Result;
-use aurelia::{configuration, middleware::authentication::JwtClaims, telemetry};
-use jsonwebtoken::{encode, EncodingKey, Header};
+use aurelia::{configuration, middleware::authentication::create_jwt, telemetry};
 use refinery::config::{Config, ConfigDbType};
 use structopt::StructOpt;
-use uuid::Uuid;
 
 mod database_migrations;
 
@@ -40,16 +38,7 @@ async fn main() -> Result<()> {
                 .await?;
         }
         Command::CreateJWT => {
-            let claims = JwtClaims::new(
-                Uuid::new_v4().to_string(),
-                cfg.application.auth.jwt_expiration_offset_seconds,
-            );
-            let token = encode(
-                &Header::default(),
-                &claims,
-                &EncodingKey::from_secret(cfg.application.auth.jwt_secret.as_ref()),
-            )?;
-            println!("{}", &token);
+            println!("{}", &create_jwt(&cfg).await);
         }
     }
 

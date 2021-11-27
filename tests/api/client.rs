@@ -1,4 +1,4 @@
-use aurelia::configuration::Configuration;
+use aurelia::{configuration::Configuration, middleware::authentication::create_jwt};
 
 pub struct TestClient {
     pub port: u16,
@@ -18,6 +18,11 @@ impl TestClient {
             configuration,
             client_jwt: None,
         }
+    }
+
+    pub async fn authenticated(mut self) -> Self {
+        self.set_jwt(create_jwt(&self.configuration).await);
+        self
     }
 
     pub fn set_jwt(&mut self, jwt: String) {
@@ -42,7 +47,7 @@ impl TestClient {
             .await?)
     }
 
-    pub async fn get_full_uri(&self, uri: String) -> anyhow::Result<reqwest::Response> {
+    pub async fn _get_full_uri(&self, uri: String) -> anyhow::Result<reqwest::Response> {
         Ok(self.request_get(&uri).await?)
     }
 

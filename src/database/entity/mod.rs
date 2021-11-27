@@ -4,5 +4,5 @@ pub mod tag;
 pub mod user;
 
 pub struct DbFilter {
-    limit: Option<usize>,
+    _limit: Option<usize>,
 }

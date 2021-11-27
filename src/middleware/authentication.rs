@@ -6,9 +6,10 @@ use std::{
 use anyhow::{anyhow, Result};
 use axum::http::{Request, Response};
 use futures::future::BoxFuture;
-use jsonwebtoken::{decode, DecodingKey, Validation};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use tower::Service;
+use uuid::Uuid;
 
 use crate::configuration::{Application, Configuration};
 
@@ -127,4 +128,18 @@ fn jwt_authentication<ReqBody>(
         },
         None => Err(anyhow!("Authorization header is missing.")),
     }
+}
+
+pub async fn create_jwt(cfg: &Configuration) -> String {
+    let claims = JwtClaims::new(
+        Uuid::new_v4().to_string(),
+        cfg.application.auth.jwt_expiration_offset_seconds,
+    );
+
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(cfg.application.auth.jwt_secret.as_ref()),
+    )
+    .unwrap()
 }

@@ -10,10 +10,10 @@ pub enum IngredientQuantity {
     Gram(usize),
 }
 
-#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Clone)]
 pub struct Ingredient {
-    id: Uuid,
-    name: String,
+    pub id: Uuid,
+    pub name: String,
     // tags: Tags,
 }
 

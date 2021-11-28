@@ -1,16 +1,19 @@
 export RUST_BACKTRACE := "1"
 export RUST_LOG := "debug"
 
-run:
+clean:
+    cargo clean
+
+clean-aurelia:
     cargo clean -p aurelia # rust ICE bug
+
+run:
     cargo run --bin aurelia
 
 test target='':
-    cargo clean -p aurelia # rust ICE bug
     cargo test {{target}}
 
 migrate:
-    cargo clean -p aurelia # rust ICE bug
     cargo run --bin cli -- migrate
 
 jwt:

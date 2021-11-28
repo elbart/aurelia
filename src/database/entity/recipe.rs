@@ -6,7 +6,7 @@ use crate::database::DbPool;
 
 use super::{ingredient::Ingredient, user::User};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct RecipeIngredient {
     pub ingredient: Ingredient,
     pub quantity: Option<f64>,

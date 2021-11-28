@@ -1,13 +1,11 @@
 export RUST_BACKTRACE := "1"
 export RUST_LOG := "debug"
 
-tests_all := ''
-
 run:
     cargo clean -p aurelia # rust ICE bug
     cargo run --bin aurelia
 
-test target=tests_all:
+test target='':
     cargo clean -p aurelia # rust ICE bug
     cargo test {{target}}
 

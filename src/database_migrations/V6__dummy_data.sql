@@ -27,3 +27,24 @@ SELECT 'nice lentil bowl',
     id
 FROM "user"
 WHERE email = 'tim@elbart.com';
+INSERT INTO "recipe_ingredient" ("recipe_id", "ingredient_id")
+SELECT recipe.id,
+    ingredient.id
+FROM recipe,
+    ingredient
+WHERE recipe.name = 'nice lentil bowl'
+    AND ingredient.name = 'tomato'
+UNION ALL
+SELECT recipe.id,
+    ingredient.id
+FROM recipe,
+    ingredient
+WHERE recipe.name = 'nice lentil bowl'
+    AND ingredient.name = 'lentil'
+UNION ALL
+SELECT recipe.id,
+    ingredient.id
+FROM recipe,
+    ingredient
+WHERE recipe.name = 'nice lentil bowl'
+    AND ingredient.name = 'pepper';

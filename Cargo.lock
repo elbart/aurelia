@@ -1839,7 +1839,6 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 [[package]]
 name = "sql-press"
 version = "0.1.0"
-source = "git+https://github.com/elbart/sql-press#74eb5e3756bf2fc84764fb37c525b5be8cd8b386"
 
 [[package]]
 name = "sqlformat"

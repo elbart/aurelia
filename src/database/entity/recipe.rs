@@ -74,14 +74,14 @@ pub async fn get_recipes(pool: DbPool) -> anyhow::Result<Vec<Recipe>> {
     })
     .fetch_all(&*pool)
     .await?
-    .iter()
-    .fold(Vec::new(), |mut recipes: Vec<Recipe>, recipe: &Recipe| {
+    .into_iter()
+    .fold(Vec::new(), |mut recipes: Vec<Recipe>, recipe: Recipe| {
         if let Some(r) = recipes.last_mut() {
             if r.id == recipe.id {
-                r.ingredients.extend(recipe.ingredients.clone());
+                r.ingredients.extend(recipe.ingredients);
             }
         } else {
-            recipes.push(recipe.clone());
+            recipes.push(recipe);
         }
         recipes
     });

@@ -48,3 +48,66 @@ FROM recipe,
     ingredient
 WHERE recipe.name = 'nice lentil bowl'
     AND ingredient.name = 'pepper';
+INSERT INTO "ingredient_tag" ("ingredient_id", "tag_id")
+SELECT ingredient.id,
+    tag.id
+FROM ingredient,
+    tag
+WHERE ingredient.name = 'pepper'
+    AND tag.name = 'gluten-free'
+UNION ALL
+SELECT ingredient.id,
+    tag.id
+FROM ingredient,
+    tag
+WHERE ingredient.name = 'pepper'
+    AND tag.name = 'vegan'
+UNION ALL
+SELECT ingredient.id,
+    tag.id
+FROM ingredient,
+    tag
+WHERE ingredient.name = 'pepper'
+    AND tag.name = 'vegetarian'
+UNION ALL
+SELECT ingredient.id,
+    tag.id
+FROM ingredient,
+    tag
+WHERE ingredient.name = 'lentil'
+    AND tag.name = 'gluten-free'
+UNION ALL
+SELECT ingredient.id,
+    tag.id
+FROM ingredient,
+    tag
+WHERE ingredient.name = 'lentil'
+    AND tag.name = 'vegetarian'
+UNION ALL
+SELECT ingredient.id,
+    tag.id
+FROM ingredient,
+    tag
+WHERE ingredient.name = 'lentil'
+    AND tag.name = 'vegan'
+UNION ALL
+SELECT ingredient.id,
+    tag.id
+FROM ingredient,
+    tag
+WHERE ingredient.name = 'tomato'
+    AND tag.name = 'vegetarian'
+UNION ALL
+SELECT ingredient.id,
+    tag.id
+FROM ingredient,
+    tag
+WHERE ingredient.name = 'tomato'
+    AND tag.name = 'gluten-free'
+UNION ALL
+SELECT ingredient.id,
+    tag.id
+FROM ingredient,
+    tag
+WHERE ingredient.name = 'tomato'
+    AND tag.name = 'vegan';

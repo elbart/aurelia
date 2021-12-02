@@ -15,4 +15,18 @@ async fn test_get_recipes() {
     assert_eq!("tim@elbart.com", recipes.get(0).unwrap().user.email);
     assert_eq!(None, recipes.get(0).unwrap().link);
     assert_eq!(3, recipes.get(0).unwrap().ingredients.len());
+    assert_eq!(
+        3,
+        recipes
+            .get(0)
+            .unwrap()
+            .ingredients
+            .get(0)
+            .unwrap()
+            .ingredient
+            .tags
+            .len()
+    );
+
+    println!("{:?}", recipes);
 }

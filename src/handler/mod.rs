@@ -82,5 +82,8 @@ pub async fn get_recipes(
 ) -> impl IntoResponse {
     assert!(claims.is_some());
 
-    (StatusCode::OK, Json(recipe::get_recipes(db).await.unwrap()))
+    (
+        StatusCode::OK,
+        Json(recipe::Recipe::get_recipes(db).await.unwrap()),
+    )
 }

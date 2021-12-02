@@ -24,67 +24,88 @@ pub struct Recipe {
     pub ingredients: Vec<RecipeIngredient>,
 }
 
-pub async fn get_recipes(pool: DbPool) -> anyhow::Result<Vec<Recipe>> {
-    let recipes = sqlx::query(
-        r#"SELECT
+impl Recipe {
+    pub async fn get_recipes(pool: DbPool) -> anyhow::Result<Vec<Recipe>> {
+        let mut recipes = sqlx::query(
+            r#"SELECT
           r.id AS recipe_id,
           r.name AS recipe_name,
           r.description AS recipe_description,
           r.link AS recipe_link,
           u.id AS user_id,
           u.email AS user_email,
-          u.password AS user_password,
-          i.id AS ingredient_id,
-          i.name AS ingredient_name,
-          ri.unit AS ri_unit,
-          ri.quantity AS ri_quantity
+          u.password AS user_password
         FROM recipe r
         INNER JOIN "user" u ON r.user_id = u.id
-        LEFT JOIN recipe_ingredient ri ON r.id = ri.recipe_id
-        LEFT JOIN ingredient i ON ri.ingredient_id = i.id
         "#,
-    )
-    .try_map(|row: PgRow| {
-        let ri = if let Some(id) = row.try_get("ingredient_id")? {
-            vec![RecipeIngredient {
-                ingredient: Ingredient {
-                    id,
-                    name: row.try_get("ingredient_name")?,
+        )
+        .try_map(|row: PgRow| {
+            Ok(Recipe {
+                id: row.try_get("recipe_id")?,
+                name: row.try_get("recipe_name")?,
+                description: row.try_get("recipe_description")?,
+                link: row.try_get("recipe_link")?,
+                user_id: row.try_get("user_id")?,
+                user: User {
+                    id: row.try_get("user_id")?,
+                    email: row.try_get("user_email")?,
+                    password: row.try_get("user_password")?,
                 },
-                quantity: row.try_get("ri_quantity")?,
-                unit: row.try_get("ri_unit")?,
-            }]
-        } else {
-            vec![]
-        };
-
-        Ok(Recipe {
-            id: row.try_get("recipe_id")?,
-            name: row.try_get("recipe_name")?,
-            description: row.try_get("recipe_description")?,
-            link: row.try_get("recipe_link")?,
-            user_id: row.try_get("user_id")?,
-            user: User {
-                id: row.try_get("user_id")?,
-                email: row.try_get("user_email")?,
-                password: row.try_get("user_password")?,
-            },
-            ingredients: ri,
+                ingredients: vec![],
+            })
         })
-    })
-    .fetch_all(&*pool)
-    .await?
-    .into_iter()
-    .fold(Vec::new(), |mut recipes: Vec<Recipe>, recipe: Recipe| {
-        if let Some(r) = recipes.last_mut() {
-            if r.id == recipe.id {
-                r.ingredients.extend(recipe.ingredients);
-            }
-        } else {
-            recipes.push(recipe);
-        }
-        recipes
-    });
+        .fetch_all(&*pool)
+        .await?;
+        // .fold(Vec::new(), |mut recipes: Vec<Recipe>, recipe: Recipe| {
+        //     if let Some(r) = recipes.last_mut() {
+        //         if r.id == recipe.id {
+        //             r.ingredients.extend(recipe.ingredients);
+        //         }
+        //     } else {
+        //         recipes.push(recipe);
+        //     }
+        //     recipes
+        // });
 
-    Ok(recipes)
+        RecipeIngredient::get_recipe_ingredients(&mut recipes, pool).await?;
+        Ok(recipes)
+    }
+}
+
+impl RecipeIngredient {
+    pub async fn get_recipe_ingredients(
+        recipes: &mut Vec<Recipe>,
+        pool: DbPool,
+    ) -> anyhow::Result<()> {
+        for r in recipes {
+            let mut recipe_ingredients: Vec<RecipeIngredient> = sqlx::query(
+                r#"SELECT * FROM
+            recipe_ingredient
+            LEFT JOIN ingredient i ON recipe_ingredient.ingredient_id = i.id
+            WHERE recipe_id = $1
+            "#,
+            )
+            .bind(r.id)
+            .try_map(|row: PgRow| {
+                Ok(RecipeIngredient {
+                    ingredient: Ingredient {
+                        id: row.try_get("id")?,
+                        name: row.try_get("name")?,
+                        tags: vec![],
+                    },
+                    quantity: row.try_get("quantity")?,
+                    unit: row.try_get("unit")?,
+                })
+            })
+            .fetch_all(&*pool)
+            .await?;
+
+            for ri in recipe_ingredients.iter_mut() {
+                ri.ingredient.fetch_tags(pool.clone()).await?;
+                r.ingredients.push(ri.to_owned());
+            }
+        }
+
+        Ok(())
+    }
 }

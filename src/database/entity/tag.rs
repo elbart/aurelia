@@ -6,10 +6,10 @@ use crate::database::DbPool;
 
 use super::DbFilter;
 
-#[derive(Debug, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Serialize, Deserialize, FromRow, Clone, PartialEq)]
 pub struct Tag {
-    id: Uuid,
-    name: String,
+    pub id: Uuid,
+    pub name: String,
 }
 
 pub async fn get_tag_by_id(id: Uuid, pool: DbPool) -> Option<Tag> {

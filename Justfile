@@ -4,6 +4,9 @@ export RUST_LOG := "debug"
 default:
     @just --list
 
+build:
+    cargo build
+
 clean:
     cargo clean
 
@@ -17,7 +20,7 @@ run-bt:
     RUST_BACKTRACE=1 cargo run --bin aurelia
 
 test target='':
-    cargo test {{target}}
+    cargo test {{target}} -- --nocapture
 
 test-bt target='':
     RUST_BACKTRACE=1 cargo test {{target}}

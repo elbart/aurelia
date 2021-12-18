@@ -51,7 +51,7 @@ pub struct Oidc {
     pub redirect_url: String,
 }
 
-/// Central configuration object which reads:
+/// Central configuration object which reads
 #[derive(Debug, Deserialize, Clone)]
 pub struct Configuration {
     pub database: Database,

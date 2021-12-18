@@ -6,13 +6,6 @@ use crate::database::DbPool;
 
 use super::tag::Tag;
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum IngredientQuantity {
-    Piece(usize),
-    Gram(usize),
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Ingredient {
     pub id: Uuid,

@@ -5,28 +5,36 @@ default:
     @just --list
 
 build:
-    cargo build
+    cd api && cargo build
 
 clean:
-    cargo clean
+    cd api && cargo clean
 
+# seems deprecated since rust 1.57.0
 clean-ice:
-    cargo clean -p aurelia # rust ICE bug
+    cd api && cargo clean -p aurelia # rust ICE bug
 
-run:
-    cargo run --bin aurelia
+run-api:
+    cd api && cargo watch -x 'run --bin aurelia'
 
 run-bt:
-    RUST_BACKTRACE=1 cargo run --bin aurelia
+    cd api && RUST_BACKTRACE=1 cargo watch -x 'run --bin aurelia'
+
+run-frontend:
+    cd frontend && npm run dev
+
+run-database:
+    docker compose up -d && docker compose logs -f
 
 test target='':
-    cargo test {{target}} -- --nocapture
+    cd api && cargo test {{target}} -- --nocapture
 
 test-bt target='':
-    RUST_BACKTRACE=1 cargo test {{target}}
+    cd api && RUST_BACKTRACE=1 cargo test {{target}}
 
 migrate:
-    cargo run --bin cli -- migrate
+    cd api && cargo run --bin cli -- migrate
 
 jwt:
-    cargo run --bin cli -- create-jwt
+    cd api && cargo run --bin cli -- create-jwt
+

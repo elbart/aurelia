@@ -56,16 +56,6 @@ impl Recipe {
         })
         .fetch_all(&*pool)
         .await?;
-        // .fold(Vec::new(), |mut recipes: Vec<Recipe>, recipe: Recipe| {
-        //     if let Some(r) = recipes.last_mut() {
-        //         if r.id == recipe.id {
-        //             r.ingredients.extend(recipe.ingredients);
-        //         }
-        //     } else {
-        //         recipes.push(recipe);
-        //     }
-        //     recipes
-        // });
 
         RecipeIngredient::get_recipe_ingredients(&mut recipes, pool).await?;
         Ok(recipes)

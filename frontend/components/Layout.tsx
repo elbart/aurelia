@@ -24,8 +24,8 @@ const userNavigation = [
   { name: 'Sign out', href: '#' },
 ]
 type Props = {
-  children?: ReactNode
-  title?: string
+  children?: ReactNode,
+  title?: string,
 }
 
 const Layout = ({ children, title = 'Nutria' }: Props) => (

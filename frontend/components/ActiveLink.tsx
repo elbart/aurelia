@@ -1,17 +1,18 @@
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/router';
+import { MouseEvent } from 'react';
 
 export function classNames(...classes: string[]) {
-    return classes.filter(Boolean).join(' ')
-}
+    return classes.filter(Boolean).join(' ');
+};
 
 function ActiveLink({ children, href }) {
-    const router = useRouter()
+    const router = useRouter();
     const current = router.asPath === href;
 
-    const handleClick = (e) => {
-        e.preventDefault()
-        router.push(href)
-    }
+    const handleClick = (e: MouseEvent<HTMLAnchorElement>) => {
+        e.preventDefault();
+        router.push(href);
+    };
 
     return (
         <a href={href} onClick={handleClick} className={classNames(
@@ -22,7 +23,7 @@ function ActiveLink({ children, href }) {
         )} aria-current={current ? 'page' : undefined}>
             {children}
         </a>
-    )
-}
+    );
+};
 
-export default ActiveLink
+export default ActiveLink;

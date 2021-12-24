@@ -34,6 +34,7 @@ tracing-bunyan-formatter = "0.3"
 tracing-log = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tower = "0.4"
+tower-http = { version = "0.2", features = ["fs"]}
 uuid = { version = "0.8", features = ["v4", "serde"] }
 
 [dev-dependencies]

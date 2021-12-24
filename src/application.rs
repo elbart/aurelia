@@ -60,6 +60,11 @@ impl Application {
         self
     }
 
+    pub fn with_static_routes(mut self, dir: (String, String)) -> Self {
+        self.router = self.router.with_static_route(dir);
+        self
+    }
+
     pub async fn prepare(self) -> Result<PreparedApplication, hyper::Error> {
         let db = init_connection(&self.state.configuration).await;
         let db = Arc::new(db);

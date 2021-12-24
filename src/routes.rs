@@ -1,8 +1,13 @@
 use std::sync::Arc;
 
-use axum::{routing::get, AddExtensionLayer, Router};
+use axum::{
+    routing::{get, get_service},
+    AddExtensionLayer, Router,
+};
+use hyper::StatusCode;
 use sqlx::{Pool, Postgres};
 use tower::layer::layer_fn;
+use tower_http::services::ServeDir;
 
 use crate::{
     application::ApplicationState,
@@ -41,6 +46,23 @@ impl ApplicationRouter {
         self.router = self
             .router
             .nest(&self.state.configuration.application.auth.path_prefix, ar);
+
+        self
+    }
+
+    pub(crate) fn with_static_route(mut self, dir: (String, String)) -> ApplicationRouter {
+        self.router = self.router.nest(
+            dir.0.as_str(),
+            get_service(ServeDir::new(dir.1.as_str())).handle_error(
+                |error: std::io::Error| async move {
+                    tracing::error!("Unhandled internal error: {}", error);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("Unhandled internal error: {}", error),
+                    )
+                },
+            ),
+        );
 
         self
     }

@@ -2,10 +2,10 @@ use std::{collections::HashMap, net::Ipv4Addr};
 
 // use anyhow::Result;
 use config::{Config, ConfigError, Environment, File};
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 
 /// Database configuration
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Database {
     pub host: String,
     pub port: u16,
@@ -15,7 +15,7 @@ pub struct Database {
 }
 
 /// Http configuration
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Http {
     #[serde(deserialize_with = "ip_string_to_octets")]
     pub address: Ipv4Addr,
@@ -23,13 +23,14 @@ pub struct Http {
 }
 
 /// Application configuration
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Application {
     pub auth: Auth,
+    pub debug: bool,
 }
 
 /// Authentication / Authorization configuration
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Auth {
     pub jwt_secret: String,
     pub jwt_expiration_offset_seconds: usize,
@@ -40,7 +41,7 @@ pub struct Auth {
 }
 
 // OpenID client configuration
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Oidc {
     pub provider_name: String,
     pub client_name: String,
@@ -53,7 +54,7 @@ pub struct Oidc {
 }
 
 /// Central configuration object which reads
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Configuration {
     pub database: Database,
     pub http: Http,

@@ -10,6 +10,7 @@ username = "aurelia"
 password = "aurelia"
 
 [application]
+debug = true
 
 [application.auth]
 jwt_secret = "TQgF1LMRwGVyH4XLZhak3hnlvxVCtWuuCY0E8GwcEdZpds2vBe5F47U3wEij32sPqu7va7g8rIVj5aoaxQKnzYEd8eobhcjmKjUcGNRzPEYZ4CwJEOMlcAck"

@@ -66,8 +66,7 @@ impl Application {
     }
 
     pub async fn prepare(self) -> Result<PreparedApplication, hyper::Error> {
-        let db = init_connection(&self.state.configuration).await;
-        let db = Arc::new(db);
+        let db = Arc::new(init_connection(&self.state.configuration).await);
 
         let addr = SocketAddr::from((
             self.state.configuration.http.address,

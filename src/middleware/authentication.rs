@@ -101,7 +101,7 @@ where
 
 /// Takes an ``axum::Request`` and tries to extract and decode the
 /// JWT from a configurable HTTP header.
-fn jwt_authentication<ReqBody>(
+pub(crate) fn jwt_authentication<ReqBody>(
     req: &Request<ReqBody>,
     configuration: &Application,
 ) -> Result<JwtClaims> {

@@ -4,6 +4,7 @@ use crate::{
 use anyhow::Result;
 use refinery::config::{Config, ConfigDbType};
 use structopt::StructOpt;
+use uuid::Uuid;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "CLI client", about = "Command line interface")]
@@ -32,7 +33,7 @@ pub async fn cli_migrate_database(cfg: &Configuration) -> Result<()> {
     Ok(())
 }
 
-pub async fn cli_create_jwt(cfg: &Configuration) -> Result<()> {
-    println!("{}", &create_jwt(cfg).await);
+pub async fn cli_create_jwt(cfg: &Configuration, user_id: Option<Uuid>) -> Result<()> {
+    println!("{}", &create_jwt(cfg, user_id).await);
     Ok(())
 }

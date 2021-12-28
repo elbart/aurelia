@@ -31,8 +31,8 @@ impl<S> JwtAuthenticationMiddleware<S> {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct JwtClaims {
-    sub: String,
-    exp: usize,
+    pub sub: String,
+    pub exp: usize,
 }
 
 impl JwtClaims {
@@ -179,11 +179,14 @@ pub(crate) fn jwt_authentication<ReqBody>(
     }
 }
 
-pub async fn create_jwt(cfg: &Configuration) -> String {
-    let claims = JwtClaims::new(
-        Uuid::new_v4().to_string(),
-        cfg.application.auth.jwt_expiration_offset_seconds,
-    );
+pub async fn create_jwt(cfg: &Configuration, user_id: Option<Uuid>) -> String {
+    let sub = if let Some(uid) = user_id {
+        uid.to_string()
+    } else {
+        Uuid::new_v4().to_string()
+    };
+
+    let claims = JwtClaims::new(sub, cfg.application.auth.jwt_expiration_offset_seconds);
 
     encode(
         &Header::default(),

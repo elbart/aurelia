@@ -2,23 +2,23 @@ use async_trait::async_trait;
 
 use crate::{configuration::Configuration, middleware::authentication::create_jwt};
 
-pub struct AureliaTestClient {
+pub struct AureliaTestClient<CC> {
     pub port: u16,
     http_client: reqwest::Client,
-    pub configuration: Configuration,
+    pub configuration: Configuration<CC>,
     pub client_jwt: Option<String>,
 }
 
 #[async_trait]
-pub trait TestClient {
-    fn new(port: u16, configuration: Configuration) -> Self;
+pub trait TestClient<CC> {
+    fn new(port: u16, configuration: Configuration<CC>) -> Self;
     async fn authenticated(&mut self);
     fn set_jwt(&mut self, jwt: String);
 }
 
 #[async_trait]
-impl TestClient for AureliaTestClient {
-    fn new(port: u16, configuration: Configuration) -> Self {
+impl<CC: Sync + Send> TestClient<CC> for AureliaTestClient<CC> {
+    fn new(port: u16, configuration: Configuration<CC>) -> Self {
         Self {
             port,
             http_client: reqwest::Client::builder()
@@ -39,7 +39,7 @@ impl TestClient for AureliaTestClient {
     }
 }
 
-impl AureliaTestClient {
+impl<CC> AureliaTestClient<CC> {
     pub fn uri(&self, uri_part: &str) -> String {
         format!("http://localhost:{}{}", self.port, uri_part)
     }

@@ -14,6 +14,7 @@ use openidconnect::{
     reqwest::async_http_client,
     AuthorizationCode, ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce, RedirectUrl,
 };
+use serde::Deserialize;
 
 use crate::{application::ApplicationState, middleware::authentication::JwtClaims};
 
@@ -22,10 +23,13 @@ pub async fn claims(Extension(claims): Extension<Option<JwtClaims>>) -> impl Int
 }
 
 /// Oidc client creation helper
-async fn oidc_client(
+async fn oidc_client<'a, CC>(
     provider_name: String,
-    state: &ApplicationState,
-) -> Result<CoreClient, StatusCode> {
+    state: &ApplicationState<CC>,
+) -> Result<CoreClient, StatusCode>
+where
+    CC: Deserialize<'a>,
+{
     let provider = state
         .configuration
         .get_oidc_provider(&provider_name)
@@ -70,11 +74,14 @@ async fn oidc_client(
 }
 
 /// Callback handler for openid connect
-pub async fn oidc_client_login(
+pub async fn oidc_client_login<'a, CC>(
     Path(provider_name): Path<String>,
     Extension(_claims): Extension<Option<JwtClaims>>,
-    Extension(state): Extension<ApplicationState>,
-) -> Result<Redirect, StatusCode> {
+    Extension(state): Extension<ApplicationState<CC>>,
+) -> Result<Redirect, StatusCode>
+where
+    CC: Deserialize<'a>,
+{
     let client = oidc_client(provider_name, &state).await?;
     let (auth_url, _csrf_token, _nonce) = client
         .authorize_url(
@@ -92,12 +99,15 @@ pub async fn oidc_client_login(
     )?))
 }
 
-pub async fn oidc_client_login_cb(
+pub async fn oidc_client_login_cb<'a, CC>(
     Query(query): Query<HashMap<String, String>>,
     Path(provider_name): Path<String>,
     Extension(_claims): Extension<Option<JwtClaims>>,
-    Extension(state): Extension<ApplicationState>,
-) -> Result<(Headers<Vec<(HeaderName, std::string::String)>>, StatusCode), StatusCode> {
+    Extension(state): Extension<ApplicationState<CC>>,
+) -> Result<(Headers<Vec<(HeaderName, std::string::String)>>, StatusCode), StatusCode>
+where
+    CC: Deserialize<'a>,
+{
     tracing::info!("{:?}", query);
     let client = oidc_client(provider_name, &state).await?;
     let code = query.get("code").ok_or_else(|| {

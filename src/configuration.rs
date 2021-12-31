@@ -1,4 +1,4 @@
-use std::{collections::HashMap, net::Ipv4Addr};
+use std::{collections::HashMap, fmt::Debug, net::Ipv4Addr};
 
 // use anyhow::Result;
 use config::{Config, ConfigError, Environment, File};
@@ -24,9 +24,10 @@ pub struct Http {
 
 /// Application configuration
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Application {
+pub struct Application<T> {
     pub auth: Auth,
     pub debug: bool,
+    pub custom: Option<T>,
 }
 
 /// Authentication / Authorization configuration
@@ -55,10 +56,10 @@ pub struct Oidc {
 
 /// Central configuration object which reads
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Configuration {
+pub struct Configuration<T> {
     pub database: Database,
     pub http: Http,
-    pub application: Application,
+    pub application: Application<T>,
 }
 
 fn ip_string_to_octets<'de, D>(deserializer: D) -> Result<Ipv4Addr, D::Error>
@@ -68,7 +69,7 @@ where
     Ipv4Addr::deserialize(deserializer)
 }
 
-impl Configuration {
+impl<'a, CC: Deserialize<'a>> Configuration<CC> {
     /// 1. File ``etc/aurelia.toml``,
     /// 2. Env with prefix ``AURELIA_``.
     pub fn new() -> Result<Self, ConfigError> {

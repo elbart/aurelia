@@ -15,13 +15,13 @@ use uuid::Uuid;
 use crate::configuration::{Application, Configuration};
 
 #[derive(Clone)]
-pub struct JwtAuthenticationMiddleware<S> {
+pub struct JwtAuthenticationMiddleware<S, CC> {
     pub(crate) inner: S,
-    pub(crate) configuration: Arc<Configuration>,
+    pub(crate) configuration: Arc<Configuration<CC>>,
 }
 
-impl<S> JwtAuthenticationMiddleware<S> {
-    pub fn new(inner: S, configuration: Arc<Configuration>) -> Self {
+impl<S, CC> JwtAuthenticationMiddleware<S, CC> {
+    pub fn new(inner: S, configuration: Arc<Configuration<CC>>) -> Self {
         Self {
             inner,
             configuration,
@@ -49,12 +49,13 @@ impl JwtClaims {
     }
 }
 
-impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for JwtAuthenticationMiddleware<S>
+impl<S, ReqBody, ResBody, CC> Service<Request<ReqBody>> for JwtAuthenticationMiddleware<S, CC>
 where
     S: Service<Request<ReqBody>, Response = Response<ResBody>> + Clone + Send + 'static,
     S::Future: Send + 'static,
     ReqBody: Send + 'static,
     ResBody: Send + 'static,
+    CC: Send + 'static + Clone,
 {
     type Response = S::Response;
     type Error = S::Error;
@@ -101,9 +102,9 @@ where
 
 /// Takes an ``axum::Request`` and tries to extract and decode the
 /// JWT from a configurable HTTP header.
-pub(crate) fn jwt_authentication<ReqBody>(
+pub(crate) fn jwt_authentication<ReqBody, CC>(
     req: &Request<ReqBody>,
-    configuration: &Application,
+    configuration: &Application<CC>,
 ) -> Result<JwtClaims> {
     tracing::debug!(
         "Trying to authenticate JWT. Reading from HTTP header: {}",
@@ -179,7 +180,7 @@ pub(crate) fn jwt_authentication<ReqBody>(
     }
 }
 
-pub async fn create_jwt(cfg: &Configuration, user_id: Option<Uuid>) -> String {
+pub async fn create_jwt<CC>(cfg: &Configuration<CC>, user_id: Option<Uuid>) -> String {
     let sub = if let Some(uid) = user_id {
         uid.to_string()
     } else {

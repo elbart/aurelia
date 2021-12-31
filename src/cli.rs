@@ -19,7 +19,7 @@ pub enum Command {
     CreateJWT,
 }
 
-pub async fn cli_migrate_database(cfg: &Configuration) -> Result<()> {
+pub async fn cli_migrate_database<CC>(cfg: &Configuration<CC>) -> Result<()> {
     let mut conn = Config::new(ConfigDbType::Postgres)
         .set_db_host(&cfg.database.host)
         .set_db_port(&cfg.database.port.to_string())
@@ -33,7 +33,7 @@ pub async fn cli_migrate_database(cfg: &Configuration) -> Result<()> {
     Ok(())
 }
 
-pub async fn cli_create_jwt(cfg: &Configuration, user_id: Option<Uuid>) -> Result<()> {
+pub async fn cli_create_jwt<CC>(cfg: &Configuration<CC>, user_id: Option<Uuid>) -> Result<()> {
     println!("{}", &create_jwt(cfg, user_id).await);
     Ok(())
 }

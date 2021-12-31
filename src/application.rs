@@ -4,6 +4,7 @@ use std::sync::Arc;
 use axum::routing::IntoMakeService;
 use axum::{Router, Server};
 use hyper::server::conn::AddrIncoming;
+use serde::Deserialize;
 
 use crate::configuration::{self, Configuration};
 use crate::database::init_connection;
@@ -12,26 +13,27 @@ use crate::routes::{self, ApplicationRouter};
 
 /// Central read-only application state struct.
 #[derive(Clone, Debug)]
-pub struct ApplicationState {
-    pub configuration: Arc<Configuration>,
+pub struct ApplicationState<CC> {
+    pub configuration: Arc<Configuration<CC>>,
 }
 
-impl ApplicationState {
-    pub fn new(cfg: Configuration) -> ApplicationState {
+impl<CC> ApplicationState<CC> {
+    pub fn new(cfg: Configuration<CC>) -> ApplicationState<CC> {
         Self {
             configuration: Arc::new(cfg),
         }
     }
 }
 
-pub struct Application {
-    pub state: ApplicationState,
-    router: ApplicationRouter,
+#[derive(Debug, Clone)]
+pub struct Application<CC> {
+    pub state: ApplicationState<CC>,
+    router: ApplicationRouter<CC>,
 }
 
-impl Application {
+impl<'a, CC: std::fmt::Debug + Clone + Deserialize<'a> + Sync + Send + 'static> Application<CC> {
     /// External Entry Point for the application, which usually get's run from main
-    pub async fn init(cfg: Option<configuration::Configuration>) -> anyhow::Result<Self> {
+    pub async fn init(cfg: Option<configuration::Configuration<CC>>) -> anyhow::Result<Self> {
         let app_state;
         if cfg.is_none() {
             app_state = ApplicationState::new(configuration::Configuration::new()?);

@@ -5,6 +5,7 @@ use axum::{
     AddExtensionLayer, Router,
 };
 use hyper::StatusCode;
+use serde::Deserialize;
 use sqlx::{Pool, Postgres};
 use tower::layer::layer_fn;
 use tower_http::services::ServeDir;
@@ -16,14 +17,17 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-pub struct ApplicationRouter {
+pub struct ApplicationRouter<CC> {
     router: Router,
-    state: ApplicationState,
+    state: ApplicationState<CC>,
 }
 
-impl ApplicationRouter {
+impl<'a, CC> ApplicationRouter<CC>
+where
+    CC: Sync + Send + Clone + 'static,
+{
     /// Router definitions should go here.
-    pub(crate) fn configure(state: ApplicationState) -> ApplicationRouter {
+    pub(crate) fn configure(state: ApplicationState<CC>) -> ApplicationRouter<CC> {
         Self {
             router: Router::new(),
             state,
@@ -31,11 +35,17 @@ impl ApplicationRouter {
     }
 
     /// Takes existing ApplicationRouter and adds authentication routes
-    pub(crate) fn with_auth_routes(mut self) -> ApplicationRouter {
+    pub(crate) fn with_auth_routes(mut self) -> ApplicationRouter<CC>
+    where
+        CC: Deserialize<'a>,
+    {
         let ar: Router = Router::new()
             .route("/self", get(claims))
-            .route("/oidc_login/:provider_name", get(oidc_client_login))
-            .route("/oidc_login_cb/:provider_name", get(oidc_client_login_cb))
+            .route("/oidc_login/:provider_name", get(oidc_client_login::<CC>))
+            .route(
+                "/oidc_login_cb/:provider_name",
+                get(oidc_client_login_cb::<CC>),
+            )
             .layer(layer_fn(|inner| JwtAuthenticationMiddleware {
                 inner,
                 configuration: self.state.configuration.clone(),
@@ -50,7 +60,7 @@ impl ApplicationRouter {
         self
     }
 
-    pub(crate) fn with_static_route(mut self, dir: (String, String)) -> ApplicationRouter {
+    pub(crate) fn with_static_route(mut self, dir: (String, String)) -> ApplicationRouter<CC> {
         self.router = self.router.nest(
             dir.0.as_str(),
             get_service(ServeDir::new(dir.1.as_str())).handle_error(

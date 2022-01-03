@@ -1,6 +1,5 @@
 use std::{collections::HashMap, net::Ipv4Addr};
 
-// use anyhow::Result;
 use config::{Config, ConfigError, Environment, File};
 use serde::{Deserialize, Deserializer, Serialize};
 
@@ -27,6 +26,14 @@ pub struct Http {
 pub struct Application {
     pub auth: Auth,
     pub debug: bool,
+    pub custom: toml::Value,
+}
+
+impl Application {
+    /// Try to decode custom part into given type
+    pub fn custom<'a, T: Deserialize<'a>>(&self) -> Result<T, toml::de::Error> {
+        self.custom.clone().try_into()
+    }
 }
 
 /// Authentication / Authorization configuration

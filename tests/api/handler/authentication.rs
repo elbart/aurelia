@@ -31,7 +31,7 @@ async fn test_oidc_login_cb() {
         .await
         .unwrap();
 
-    let provider_location = r
+    let mut provider_location = r
         .headers()
         .get("location")
         .unwrap()
@@ -39,7 +39,10 @@ async fn test_oidc_login_cb() {
         .unwrap()
         .to_string();
 
+    provider_location = provider_location.replace("3001", &c.port.to_string());
+
     let provider_response = reqwest::get(provider_location).await.unwrap();
 
+    // TODO: read jwt
     assert!(provider_response.status() == 200);
 }

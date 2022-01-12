@@ -33,14 +33,16 @@ impl<S> JwtAuthenticationMiddleware<S> {
 pub struct JwtClaims {
     pub sub: String,
     pub email: String,
+    pub name: String,
     pub exp: usize,
 }
 
 impl JwtClaims {
-    pub fn new(sub: String, email: String, exp_offset: usize) -> Self {
+    pub fn new(sub: String, email: String, name: String, exp_offset: usize) -> Self {
         Self {
             sub,
             email,
+            name,
             // TODO: Use chrono here, if useful
             exp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -182,15 +184,12 @@ pub(crate) fn jwt_authentication<ReqBody>(
 }
 
 pub async fn create_jwt(cfg: &Configuration, user_id: Option<Uuid>) -> String {
-    let sub = if let Some(uid) = user_id {
-        uid.to_string()
-    } else {
-        Uuid::new_v4().to_string()
-    };
+    let sub = user_id.unwrap_or(Uuid::new_v4()).to_string();
 
     let claims = JwtClaims::new(
         sub,
-        "".into(),
+        "tim@test.com".into(),
+        "Tim Mustermann".into(),
         cfg.application.auth.jwt_expiration_offset_seconds,
     );
 

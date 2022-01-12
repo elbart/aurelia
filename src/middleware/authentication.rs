@@ -32,13 +32,15 @@ impl<S> JwtAuthenticationMiddleware<S> {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct JwtClaims {
     pub sub: String,
+    pub email: String,
     pub exp: usize,
 }
 
 impl JwtClaims {
-    pub fn new(sub: String, exp_offset: usize) -> Self {
+    pub fn new(sub: String, email: String, exp_offset: usize) -> Self {
         Self {
             sub,
+            email,
             // TODO: Use chrono here, if useful
             exp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -186,7 +188,11 @@ pub async fn create_jwt(cfg: &Configuration, user_id: Option<Uuid>) -> String {
         Uuid::new_v4().to_string()
     };
 
-    let claims = JwtClaims::new(sub, cfg.application.auth.jwt_expiration_offset_seconds);
+    let claims = JwtClaims::new(
+        sub,
+        "".into(),
+        cfg.application.auth.jwt_expiration_offset_seconds,
+    );
 
     encode(
         &Header::default(),

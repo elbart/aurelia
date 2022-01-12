@@ -1,8 +1,9 @@
-use crate::{
-    configuration::Configuration, database_migrations, middleware::authentication::create_jwt,
-};
+use crate::{configuration::Configuration, middleware::authentication::create_jwt};
 use anyhow::Result;
-use refinery::config::{Config, ConfigDbType};
+use refinery::{
+    config::{Config, ConfigDbType},
+    Runner,
+};
 use structopt::StructOpt;
 use uuid::Uuid;
 
@@ -19,16 +20,17 @@ pub enum Command {
     CreateJWT,
 }
 
-pub async fn cli_migrate_database(cfg: &Configuration) -> Result<()> {
+pub async fn cli_migrate_database<A>(cfg: &Configuration, runner: A) -> Result<()>
+where
+    A: Fn() -> Runner,
+{
     let mut conn = Config::new(ConfigDbType::Postgres)
         .set_db_host(&cfg.database.host)
         .set_db_port(&cfg.database.port.to_string())
         .set_db_name(&cfg.database.database_name)
         .set_db_user(&cfg.database.username)
         .set_db_pass(&cfg.database.password);
-    database_migrations::migrations::runner()
-        .run_async(&mut conn)
-        .await?;
+    runner().run_async(&mut conn).await?;
 
     Ok(())
 }

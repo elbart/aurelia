@@ -9,3 +9,4 @@ mod routes;
 pub mod telemetry;
 pub mod template;
 pub mod testing;
+pub use sql_press;

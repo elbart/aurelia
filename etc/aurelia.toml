@@ -24,7 +24,9 @@ provider_name = "sh_stage"
 client_name = "nutrist"
 client_id = "0aa14c41-fa14-45cd-84a1-9ea63c0b9d80"
 client_secret = "sy85cgPqpL5Q4rm!"
-client_scopes = ["openid"]
+client_scopes = ["openid email profile"]
 client_role = "web"
 issuer_url = "https://aaa.mew-tech.io/op"
 redirect_url = "http://localhost:3001/auth/oidc_login_cb/sh_stage"
+
+[application.custom]

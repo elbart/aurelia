@@ -1,18 +1,19 @@
 use std::sync::Arc;
 
 use axum::{
+    extract::Extension,
+    middleware::{self},
     routing::{get, get_service},
-    AddExtensionLayer, Router,
+    Router,
 };
 use hyper::StatusCode;
 use sqlx::{Pool, Postgres};
-use tower::layer::layer_fn;
 use tower_http::services::ServeDir;
 
 use crate::{
     application::ApplicationState,
     handler::authentication::{claims, oidc_client_login, oidc_client_login_cb},
-    middleware::authentication::{JwtAuthenticationMiddleware, JwtClaims},
+    middleware::authentication::{jwt_auth_middleware, JwtClaims},
 };
 
 #[derive(Debug, Clone)]
@@ -20,7 +21,6 @@ pub struct ApplicationRouter {
     router: Router,
     state: ApplicationState,
 }
-
 impl ApplicationRouter {
     /// Router definitions should go here.
     pub(crate) fn configure(state: ApplicationState) -> ApplicationRouter {
@@ -32,16 +32,16 @@ impl ApplicationRouter {
 
     /// Takes existing ApplicationRouter and adds authentication routes
     pub(crate) fn with_auth_routes(mut self) -> ApplicationRouter {
+        let cfg_clone = self.state.configuration.application.clone();
         let ar: Router = Router::new()
             .route("/self", get(claims))
             .route("/oidc_login/:provider_name", get(oidc_client_login))
             .route("/oidc_login_cb/:provider_name", get(oidc_client_login_cb))
-            .layer(layer_fn(|inner| JwtAuthenticationMiddleware {
-                inner,
-                configuration: self.state.configuration.clone(),
+            .route_layer(middleware::from_fn(move |req, next| {
+                jwt_auth_middleware(req, next, cfg_clone.clone())
             }))
-            .layer(AddExtensionLayer::new(None::<JwtClaims>))
-            .layer(AddExtensionLayer::new(self.state.clone()));
+            .layer(Extension(None::<JwtClaims>))
+            .layer(Extension(self.state.clone()));
 
         self.router = self
             .router
@@ -75,6 +75,6 @@ impl ApplicationRouter {
     }
 
     pub fn finalize(self, db: Arc<Pool<Postgres>>) -> Router {
-        self.router.layer(AddExtensionLayer::new(db))
+        self.router.layer(Extension(db))
     }
 }

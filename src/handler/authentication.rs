@@ -23,7 +23,7 @@ pub async fn claims(Extension(claims): Extension<Option<JwtClaims>>) -> impl Int
 
 /// Oidc client creation helper
 async fn oidc_client(
-    provider_name: String,
+    provider_name: &String,
     state: &ApplicationState,
 ) -> Result<CoreClient, StatusCode> {
     let provider = state
@@ -75,7 +75,7 @@ pub async fn oidc_client_login(
     Extension(_claims): Extension<Option<JwtClaims>>,
     Extension(state): Extension<ApplicationState>,
 ) -> Result<Redirect, StatusCode> {
-    let client = oidc_client(provider_name, &state).await?;
+    let client = oidc_client(&provider_name, &state).await?;
     let (auth_url, _csrf_token, _nonce) = client
         .authorize_url(
             CoreAuthenticationFlow::AuthorizationCode,
@@ -84,7 +84,7 @@ pub async fn oidc_client_login(
         )
         .url();
 
-    Ok(Redirect::found(Uri::from_str(auth_url.as_str()).map_err(
+    Ok(Redirect::to(Uri::from_str(auth_url.as_str()).map_err(
         |e| {
             tracing::error!("Invalid Uri error: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
@@ -99,7 +99,7 @@ pub async fn oidc_client_login_cb(
     Extension(state): Extension<ApplicationState>,
 ) -> Result<(Headers<Vec<(HeaderName, std::string::String)>>, StatusCode), StatusCode> {
     tracing::info!("{:?}", query);
-    let client = oidc_client(provider_name, &state).await?;
+    let client = oidc_client(&provider_name, &state).await?;
     let code = query.get("code").ok_or_else(|| {
         tracing::error!("Missing request query parameter 'code'");
         StatusCode::BAD_REQUEST

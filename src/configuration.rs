@@ -1,4 +1,4 @@
-use std::{collections::HashMap, net::Ipv4Addr};
+use std::{collections::HashMap, fmt, net::Ipv4Addr};
 
 use config::{Config, ConfigError, Environment, File};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -37,18 +37,40 @@ impl Application {
 }
 
 /// Authentication / Authorization configuration
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Auth {
     pub jwt_secret: String,
     pub jwt_expiration_offset_seconds: usize,
     pub jwt_header_name: String,
     pub jwt_cookie_name: String,
+    pub jwt_algorithm: String,
+    pub jwtrsaprivatekey: String,
+    pub jwtrsapublickey: String,
     pub path_prefix: String,
     pub oidc: HashMap<String, Oidc>,
 }
 
+impl std::fmt::Debug for Auth {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Auth")
+            .field("jwt_secret", &"***")
+            .field(
+                "jwt_expiration_offset_seconds",
+                &self.jwt_expiration_offset_seconds,
+            )
+            .field("jwt_header_name", &self.jwt_header_name)
+            .field("jwt_cookie_name", &self.jwt_cookie_name)
+            .field("jwt_algorithm", &self.jwt_algorithm)
+            .field("jwtrsaprivatekey", &"***")
+            .field("jwtrsapublickey", &"***")
+            .field("path_prefix", &self.path_prefix)
+            .field("oidc", &self.oidc)
+            .finish()
+    }
+}
+
 // OpenID client configuration
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Oidc {
     pub provider_name: String,
     pub client_name: String,
@@ -58,6 +80,21 @@ pub struct Oidc {
     pub client_role: String,
     pub issuer_url: String,
     pub redirect_url: String,
+}
+
+impl std::fmt::Debug for Oidc {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Oidc")
+            .field("provider_name", &self.provider_name)
+            .field("client_name", &self.client_name)
+            .field("client_id", &self.client_id)
+            .field("client_secret", &"***")
+            .field("client_scopes", &self.client_scopes)
+            .field("client_role", &self.client_role)
+            .field("issuer_url", &self.issuer_url)
+            .field("redirect_url", &self.redirect_url)
+            .finish()
+    }
 }
 
 /// Central configuration object which reads
@@ -79,11 +116,12 @@ impl Configuration {
     /// 1. File ``etc/aurelia.toml``,
     /// 2. Env with prefix ``AURELIA_``.
     pub fn new() -> Result<Self, ConfigError> {
-        let mut c = Config::default();
-        c.merge(File::with_name("etc/aurelia.toml"))?;
-        c.merge(Environment::with_prefix("AURELIA"))?;
+        let d = Config::builder()
+            .add_source(File::with_name("etc/aurelia.toml"))
+            .add_source(Environment::with_prefix("AURELIA").separator("_"))
+            .build()?;
 
-        c.try_into()
+        d.try_deserialize()
     }
 
     pub fn get_db_url(&self) -> String {

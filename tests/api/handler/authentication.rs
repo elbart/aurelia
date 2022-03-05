@@ -5,7 +5,7 @@ use crate::cfg_fn;
 #[tokio::test]
 async fn test_oidc_login() {
     let c = get_tc::<_, AureliaTestClient>(cfg_fn).await;
-    let oidc_provider = c.configuration.get_oidc_provider("sh_stage").unwrap();
+    let oidc_provider = c.configuration.get_oidc_provider("auth0").unwrap();
 
     let r = c
         .get_oidc_login(&oidc_provider.provider_name)
@@ -24,7 +24,7 @@ async fn test_oidc_login() {
 #[tokio::test]
 async fn test_oidc_login_cb() {
     let c = get_tc::<_, AureliaTestClient>(cfg_fn).await;
-    let oidc_provider = c.configuration.get_oidc_provider("sh_stage").unwrap();
+    let oidc_provider = c.configuration.get_oidc_provider("auth0").unwrap();
 
     let r = c
         .get_oidc_login(&oidc_provider.provider_name)

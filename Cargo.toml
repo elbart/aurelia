@@ -9,7 +9,7 @@ edition = "2021"
 anyhow = "1.0"
 async-trait = "0.1"
 axum = { version = "0.4", features = ["headers"] }
-config = "0.11"
+config = "0.12"
 chrono = { version = "0.4", features = ["serde"] }
 lazy_static = "1.4"
 log = "0.4"
@@ -17,9 +17,10 @@ fast_log = "1.3"
 futures = "0.3"
 headers = "0.3"
 hyper = "0.14"
-jsonwebtoken = "7"
+jsonwebtoken = "8"
 once_cell = "1.8"
 openidconnect = "2"
+openssl = "0.10"
 refinery = { features = ["tokio-postgres"], version = "0.8" }
 reqwest = { version = "0.11", features = ["json"]}
 serde = { version = "1.0", features = ["derive"] }

@@ -1,33 +1,19 @@
 use std::{
-    sync::Arc,
+    str::FromStr,
     time::{SystemTime, UNIX_EPOCH},
 };
 
 use anyhow::{anyhow, Result};
-use axum::http::{Request, Response};
-use futures::future::BoxFuture;
+use axum::{http::Request, middleware::Next, response::IntoResponse};
 use headers::{Cookie, HeaderMapExt};
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use hyper::StatusCode;
+use jsonwebtoken::{
+    decode, encode, Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation,
+};
 use serde::{Deserialize, Serialize};
-use tower::Service;
 use uuid::Uuid;
 
 use crate::configuration::{Application, Configuration};
-
-#[derive(Clone)]
-pub struct JwtAuthenticationMiddleware<S> {
-    pub(crate) inner: S,
-    pub(crate) configuration: Arc<Configuration>,
-}
-
-impl<S> JwtAuthenticationMiddleware<S> {
-    pub fn new(inner: S, configuration: Arc<Configuration>) -> Self {
-        Self {
-            inner,
-            configuration,
-        }
-    }
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct JwtClaims {
@@ -53,68 +39,42 @@ impl JwtClaims {
     }
 }
 
-impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for JwtAuthenticationMiddleware<S>
-where
-    S: Service<Request<ReqBody>, Response = Response<ResBody>> + Clone + Send + 'static,
-    S::Future: Send + 'static,
-    ReqBody: Send + 'static,
-    ResBody: Send + 'static,
-{
-    type Response = S::Response;
-    type Error = S::Error;
-    type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
-
-    fn poll_ready(
-        &mut self,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Result<(), Self::Error>> {
-        self.inner.poll_ready(cx)
+pub async fn jwt_auth_middleware<B>(
+    mut req: Request<B>,
+    next: Next<B>,
+    config: Application,
+) -> impl IntoResponse {
+    match jwt_authentication(&req, &config).await {
+        Ok(claims) => {
+            tracing::info!("Successfully authenticated JWT with claims: {:?}", claims);
+            req.extensions_mut()
+                .get_mut::<Option<JwtClaims>>()
+                .unwrap_or(&mut None)
+                .replace(claims);
+        }
+        Err(e) => {
+            req.extensions_mut()
+                .get::<Option<JwtClaims>>()
+                .replace(&None);
+            tracing::warn!("JWT authentication failed: {}", e);
+        }
     }
 
-    fn call(&mut self, mut req: Request<ReqBody>) -> Self::Future {
-        // best practice is to clone the inner service like this
-        // see https://github.com/tower-rs/tower/issues/547 for details
-        let clone = self.inner.clone();
-        let mut inner = std::mem::replace(&mut self.inner, clone);
-        let app_cfg = self.configuration.application.clone();
-
-        Box::pin(async move {
-            tracing::trace!("JwtAuthenticationMiddleware before request processing...");
-            match jwt_authentication(&req, &app_cfg) {
-                Ok(claims) => {
-                    tracing::info!("Successfully authenticated JWT with claims: {:?}", claims);
-                    req.extensions_mut()
-                        .get_mut::<Option<JwtClaims>>()
-                        .unwrap_or(&mut None)
-                        .replace(claims);
-                }
-                Err(e) => {
-                    req.extensions_mut()
-                        .get::<Option<JwtClaims>>()
-                        .replace(&None);
-                    tracing::warn!("JWT authentication failed: {}", e);
-                }
-            }
-            let res: Response<ResBody> = inner.call(req).await?;
-            tracing::trace!("JwtAuthenticationMiddleware after request processing...");
-
-            Ok(res)
-        })
-    }
+    Ok::<_, StatusCode>(next.run(req).await)
 }
 
 /// Takes an ``axum::Request`` and tries to extract and decode the
 /// JWT from a configurable HTTP header.
-pub(crate) fn jwt_authentication<ReqBody>(
+pub(crate) async fn jwt_authentication<ReqBody>(
     req: &Request<ReqBody>,
-    configuration: &Application,
+    app_config: &Application,
 ) -> Result<JwtClaims> {
     tracing::debug!(
         "Trying to authenticate JWT. Reading from HTTP header: {}",
-        &configuration.auth.jwt_header_name
+        &app_config.auth.jwt_header_name
     );
 
-    let auth_header_result = match req.headers().get(&configuration.auth.jwt_header_name) {
+    let auth_header_result = match req.headers().get(&app_config.auth.jwt_header_name) {
         Some(value) => match value
             .to_str()
             .unwrap_or("")
@@ -126,14 +86,10 @@ pub(crate) fn jwt_authentication<ReqBody>(
             ["Bearer", token] => {
                 tracing::debug!(
                     "Found '{}' header. Trying to find Bearer JWT.",
-                    &configuration.auth.jwt_header_name
+                    &app_config.auth.jwt_header_name
                 );
 
-                let token = decode::<JwtClaims>(
-                    token,
-                    &DecodingKey::from_secret(configuration.auth.jwt_secret.as_ref()),
-                    &Validation::default(),
-                )?;
+                let token = verify_token(token, app_config).await?;
 
                 tracing::debug!("JWT decoded successfully. Claims: {:?}", &token.claims);
 
@@ -141,13 +97,13 @@ pub(crate) fn jwt_authentication<ReqBody>(
             }
             any => Err(anyhow!(
                 "Authentication via '{}' header failed. Unsupported header format: '{}'",
-                &configuration.auth.jwt_header_name,
+                &app_config.auth.jwt_header_name,
                 any.join(" ")
             )),
         },
         None => Err(anyhow!(
             "Authentication via '{}' header failed. Header is missing.",
-            &configuration.auth.jwt_header_name
+            &app_config.auth.jwt_header_name
         )),
     };
 
@@ -159,14 +115,10 @@ pub(crate) fn jwt_authentication<ReqBody>(
 
     match req.headers().typed_try_get::<Cookie>() {
         Ok(Some(cookie)) => {
-            if let Some(token) = cookie.get(&configuration.auth.jwt_cookie_name) {
+            if let Some(token) = cookie.get(&app_config.auth.jwt_cookie_name) {
                 tracing::debug!("Found cookie id token header. Trying to decode JWT.");
 
-                let token = decode::<JwtClaims>(
-                    token,
-                    &DecodingKey::from_secret(configuration.auth.jwt_secret.as_ref()),
-                    &Validation::default(),
-                )?;
+                let token = verify_token(token, app_config).await?;
 
                 tracing::debug!("JWT decoded successfully. Claims: {:?}", &token.claims);
 
@@ -174,7 +126,7 @@ pub(crate) fn jwt_authentication<ReqBody>(
             } else {
                 Err(anyhow!(
                     "No id token cookie with name '{}' found.",
-                    &configuration.auth.jwt_cookie_name
+                    &app_config.auth.jwt_cookie_name
                 ))
             }
         }
@@ -183,20 +135,32 @@ pub(crate) fn jwt_authentication<ReqBody>(
     }
 }
 
-pub async fn create_jwt(cfg: &Configuration, user_id: Option<Uuid>) -> String {
+async fn verify_token(token: &str, app_config: &Application) -> Result<TokenData<JwtClaims>> {
+    let token = decode::<JwtClaims>(
+        token,
+        &DecodingKey::from_rsa_pem(app_config.auth.jwtrsapublickey.as_bytes())?,
+        &Validation::new(Algorithm::from_str(&app_config.auth.jwt_algorithm)?),
+    )?;
+
+    Ok(token)
+}
+
+pub async fn create_jwt(cfg: &Configuration, user_id: Option<Uuid>, rsa: bool) -> Result<String> {
     let sub = user_id.unwrap_or(Uuid::new_v4()).to_string();
 
     let claims = JwtClaims::new(
         sub,
-        "tim@test.com".into(),
-        "Tim Mustermann".into(),
+        "xelbartusx@gmail.com".into(),
+        "Toni Tester".into(),
         cfg.application.auth.jwt_expiration_offset_seconds,
     );
 
-    encode(
-        &Header::default(),
-        &claims,
-        &EncodingKey::from_secret(cfg.application.auth.jwt_secret.as_ref()),
-    )
-    .unwrap()
+    let key;
+    if rsa {
+        key = EncodingKey::from_rsa_pem(cfg.application.auth.jwtrsaprivatekey.as_bytes())?;
+        encode(&Header::new(Algorithm::RS256), &claims, &key).map_err(Into::into)
+    } else {
+        key = EncodingKey::from_secret(cfg.application.auth.jwt_secret.as_ref());
+        encode(&Header::new(Algorithm::HS256), &claims, &key).map_err(Into::into)
+    }
 }

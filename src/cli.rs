@@ -1,5 +1,6 @@
 use crate::{configuration::Configuration, middleware::authentication::create_jwt};
 use anyhow::Result;
+use openssl::rsa::Rsa;
 use refinery::{
     config::{Config, ConfigDbType},
     Runner,
@@ -35,7 +36,17 @@ where
     Ok(())
 }
 
-pub async fn cli_create_jwt(cfg: &Configuration, user_id: Option<Uuid>) -> Result<()> {
-    println!("{}", &create_jwt(cfg, user_id).await);
+pub async fn cli_create_jwt(cfg: &Configuration, user_id: Option<Uuid>, rsa: bool) -> Result<()> {
+    println!("{}", &create_jwt(cfg, user_id, rsa).await?);
+    Ok(())
+}
+
+pub fn create_rsa_keypair() -> Result<()> {
+    let rsa = Rsa::generate(4096).unwrap();
+    println!(
+        "{}\n\n\n{}",
+        String::from_utf8(rsa.private_key_to_pem()?)?,
+        String::from_utf8(rsa.public_key_to_pem()?)?
+    );
     Ok(())
 }

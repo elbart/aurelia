@@ -31,7 +31,11 @@ impl TestClient for AureliaTestClient {
     }
 
     async fn authenticated(&mut self) {
-        self.set_jwt(create_jwt(&self.configuration, None, true).await.unwrap())
+        self.set_jwt(
+            create_jwt(&self.configuration, None, Some(true))
+                .await
+                .unwrap(),
+        )
     }
 
     fn set_jwt(&mut self, jwt: String) {

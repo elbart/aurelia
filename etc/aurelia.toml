@@ -1,6 +1,7 @@
 [http]
 address = "127.0.0.1"
 port = 3001
+base_url = "http://localhost"
 
 [database]
 host = "localhost"

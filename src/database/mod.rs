@@ -13,10 +13,12 @@ pub async fn init_connection(configuration: &Configuration) -> Pool<Postgres> {
         .max_connections(5)
         .connect(&configuration.get_db_url())
         .await
-        .expect(&format!(
-            "Error connecting to database with URL: {}",
-            &configuration.get_db_url()
-        ));
+        .unwrap_or_else(|_| {
+            panic!(
+                "Error connecting to database with URL: {}",
+                &configuration.get_db_url()
+            )
+        });
 
     pool
 }

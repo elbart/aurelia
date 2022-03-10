@@ -19,6 +19,19 @@ pub struct Http {
     #[serde(deserialize_with = "ip_string_to_octets")]
     pub address: Ipv4Addr,
     pub port: u16,
+    pub base_url: String,
+}
+
+impl Http {
+    pub fn full_base_url(&self) -> String {
+        if (self.port == 80 && self.base_url.starts_with("http://"))
+            || (self.port == 443 && self.base_url.starts_with("https://"))
+        {
+            return self.base_url.clone();
+        }
+
+        format!("{}:{}", self.base_url, self.port)
+    }
 }
 
 /// Application configuration

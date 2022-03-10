@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 
+use anyhow::anyhow;
 use axum::{
     extract::{Path, Query},
     http::{StatusCode, Uri},
@@ -10,12 +10,17 @@ use axum::{
 
 use hyper::header::{HeaderName, SET_COOKIE};
 use openidconnect::{
-    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
+    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata, CoreTokenResponse},
     reqwest::async_http_client,
-    AuthorizationCode, ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce, RedirectUrl,
+    AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndUserEmail, EndUserFamilyName,
+    EndUserGivenName, EndUserPictureUrl, IssuerUrl, LocalizedClaim, Nonce, NonceVerifier,
+    RedirectUrl, Scope,
 };
 
-use crate::{application::ApplicationState, middleware::authentication::JwtClaims};
+use crate::{
+    application::ApplicationState,
+    middleware::authentication::{create_jwt_from_claims, JwtClaims},
+};
 
 pub async fn claims(Extension(claims): Extension<Option<JwtClaims>>) -> impl IntoResponse {
     Json(claims)
@@ -23,12 +28,12 @@ pub async fn claims(Extension(claims): Extension<Option<JwtClaims>>) -> impl Int
 
 /// Oidc client creation helper
 async fn oidc_client(
-    provider_name: &String,
+    provider_name: &str,
     state: &ApplicationState,
 ) -> Result<CoreClient, StatusCode> {
     let provider = state
         .configuration
-        .get_oidc_provider(&provider_name)
+        .get_oidc_provider(provider_name)
         .ok_or_else(|| {
             tracing::warn!("Provider not found: {}", provider_name);
             StatusCode::NOT_FOUND
@@ -82,6 +87,9 @@ pub async fn oidc_client_login(
             CsrfToken::new_random,
             Nonce::new_random,
         )
+        // TODO: use config client_scopes value
+        .add_scope(Scope::new("email".into()))
+        .add_scope(Scope::new("profile".into()))
         .url();
 
     Ok(Redirect::to(Uri::from_str(auth_url.as_str()).map_err(
@@ -90,6 +98,15 @@ pub async fn oidc_client_login(
             StatusCode::INTERNAL_SERVER_ERROR
         },
     )?))
+}
+
+// TODO: Actually store this nonce somewhere
+pub struct NoNonce();
+
+impl NonceVerifier for &NoNonce {
+    fn verify(self, _nonce: Option<&Nonce>) -> Result<(), String> {
+        Ok(())
+    }
 }
 
 pub async fn oidc_client_login_cb(
@@ -105,30 +122,78 @@ pub async fn oidc_client_login_cb(
         StatusCode::BAD_REQUEST
     })?;
 
-    let token_response = client
+    let token_response: CoreTokenResponse = client
         .exchange_code(AuthorizationCode::new(code.to_string()))
         .request_async(async_http_client)
         .await
         .map_err(|e| {
-            tracing::error!("Request Token Error received: {:?}", e);
+            tracing::error!(
+                "Request Token Error received for code: {code}. Error was: {:?}",
+                e
+            );
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
+
+    tracing::info!("Got valid Token Response: {:?}", token_response);
+
+    let id_token = token_response
+        .extra_fields()
+        .id_token()
+        .ok_or(anyhow!(
+            "No ID token provided from provider: {provider_name}"
+        ))
+        .unwrap();
+
+    let provider_claims = id_token
+        .claims(&client.id_token_verifier(), &NoNonce())
+        .unwrap()
+        .clone();
+
+    let claims = JwtClaims::new(
+        provider_claims.subject().to_string(),
+        state.configuration.http.full_base_url(),
+        provider_claims
+            .email()
+            .unwrap_or(&EndUserEmail::new("".to_string()))
+            .to_string(),
+        provider_claims
+            .given_name()
+            .unwrap_or(&LocalizedClaim::<EndUserGivenName>::default())
+            .get(None)
+            .ok_or_else(|| {
+                tracing::error!("Unable to extract given_name from id token.");
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?
+            .to_string(),
+        provider_claims
+            .family_name()
+            .unwrap_or(&LocalizedClaim::<EndUserFamilyName>::default())
+            .get(None)
+            .ok_or_else(|| {
+                tracing::error!("Unable to extract given_name from id token.");
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?
+            .to_string(),
+        provider_claims
+            .picture()
+            .unwrap_or(&LocalizedClaim::<EndUserPictureUrl>::default())
+            .get(None)
+            .map(|p| p.to_string()),
+        state
+            .configuration
+            .application
+            .auth
+            .jwt_expiration_offset_seconds,
+    );
 
     let h = Headers(vec![(
         SET_COOKIE,
         format!(
             "{}={}; path=/; HttpOnly",
             &state.configuration.application.auth.jwt_cookie_name,
-            token_response
-                .extra_fields()
-                .id_token()
-                .cloned()
-                .unwrap()
-                .to_string()
+            create_jwt_from_claims(&state.configuration, claims, None).unwrap()
         ),
     )]);
-
-    tracing::info!("Got valid Token Response: {:?}", token_response);
 
     Ok((h, StatusCode::OK))
 }

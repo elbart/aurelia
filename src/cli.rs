@@ -37,7 +37,7 @@ where
 }
 
 pub async fn cli_create_jwt(cfg: &Configuration, user_id: Option<Uuid>, rsa: bool) -> Result<()> {
-    println!("{}", &create_jwt(cfg, user_id, rsa).await?);
+    println!("{}", &create_jwt(cfg, user_id, Some(rsa)).await?);
     Ok(())
 }
 

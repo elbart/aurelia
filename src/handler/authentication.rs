@@ -19,6 +19,7 @@ use openidconnect::{
 
 use crate::{
     application::ApplicationState,
+    database::DbPool,
     middleware::authentication::{create_jwt_from_claims, JwtClaims},
 };
 
@@ -114,6 +115,7 @@ pub async fn oidc_client_login_cb(
     Path(provider_name): Path<String>,
     Extension(_claims): Extension<Option<JwtClaims>>,
     Extension(state): Extension<ApplicationState>,
+    Extension(db): Extension<DbPool>,
 ) -> Result<(Headers<Vec<(HeaderName, std::string::String)>>, StatusCode), StatusCode> {
     tracing::info!("{:?}", query);
     let client = oidc_client(&provider_name, &state).await?;
@@ -149,7 +151,7 @@ pub async fn oidc_client_login_cb(
         .unwrap()
         .clone();
 
-    let claims = JwtClaims::new(
+    let mut claims = JwtClaims::new(
         provider_claims.subject().to_string(),
         state.configuration.http.full_base_url(),
         provider_claims
@@ -185,6 +187,18 @@ pub async fn oidc_client_login_cb(
             .auth
             .jwt_expiration_offset_seconds,
     );
+
+    state
+        .handlers
+        .on_login_callback(&mut claims, &state.configuration, db)
+        .map_err(|e| {
+            tracing::error!(
+                "on_login handler failed for claims: {:?}. Error was: {}",
+                claims,
+                e
+            );
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     let h = Headers(vec![(
         SET_COOKIE,

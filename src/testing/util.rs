@@ -1,4 +1,8 @@
-use crate::{application::Application, configuration, telemetry::init_subscriber};
+use crate::{
+    application::{Application, AureliaAppHandler},
+    configuration,
+    telemetry::init_subscriber,
+};
 use once_cell::sync::Lazy;
 
 use crate::testing::client::TestClient;
@@ -17,7 +21,8 @@ where
     let mut test_cfg = configuration::Configuration::new()?;
     test_cfg.http.port = 0;
 
-    let app = Application::init(Some(test_cfg.clone())).await?;
+    let app =
+        Application::init(Some(test_cfg.clone()), Some(Box::new(AureliaAppHandler {}))).await?;
     let prepared_app = cfg_fn(app).prepare().await.unwrap();
 
     let client = T::new(prepared_app.get_port(), test_cfg);

@@ -63,6 +63,7 @@ pub struct Auth {
     pub oidc: HashMap<String, Oidc>,
     pub redirect_on_login_success: String,
     pub redirect_on_login_error: String,
+    pub login_path: String,
 }
 
 impl std::fmt::Debug for Auth {

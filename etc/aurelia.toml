@@ -24,6 +24,7 @@ jwtrsapublickey = "comes_from_dotenv"
 path_prefix = "/auth"
 redirect_on_login_success = "/"
 redirect_on_login_error = "/login/error"
+login_path = "/login"
 
 [application.auth.oidc.auth0]
 provider_name = "auth0"

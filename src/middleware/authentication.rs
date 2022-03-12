@@ -4,7 +4,11 @@ use std::{
 };
 
 use anyhow::{anyhow, Result};
-use axum::{http::Request, middleware::Next, response::IntoResponse};
+use axum::{
+    http::Request,
+    middleware::Next,
+    response::{IntoResponse, Redirect},
+};
 use headers::{Cookie, HeaderMapExt};
 use hyper::StatusCode;
 use jsonwebtoken::{
@@ -75,6 +79,19 @@ pub async fn jwt_auth_middleware<B>(
     }
 
     Ok::<_, StatusCode>(next.run(req).await)
+}
+
+pub async fn require_jwt_authentication<B>(
+    req: Request<B>,
+    next: Next<B>,
+    config: Application,
+) -> impl IntoResponse {
+    let claims = req.extensions().get::<Option<JwtClaims>>().unwrap_or(&None);
+    if claims.is_none() {
+        return Err(Redirect::to(config.auth.login_path.parse().unwrap()));
+    }
+
+    Ok::<_, Redirect>(next.run(req).await)
 }
 
 /// Takes an ``axum::Request`` and tries to extract and decode the

@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use axum::routing::IntoMakeService;
 use axum::{Router, Server};
 use dyn_clonable::clonable;
@@ -12,9 +13,10 @@ use crate::database::{init_connection, DbPool};
 use crate::middleware::authentication::JwtClaims;
 use crate::routes::{self, ApplicationRouter};
 
+#[async_trait]
 #[clonable]
 pub trait AppHandler: std::fmt::Debug + Clone + Send + Sync {
-    fn on_login_callback(
+    async fn on_login_callback(
         &self,
         claims: &mut JwtClaims,
         config: &Configuration,
@@ -24,8 +26,10 @@ pub trait AppHandler: std::fmt::Debug + Clone + Send + Sync {
 
 #[derive(Debug, Clone)]
 pub struct AureliaAppHandler {}
+
+#[async_trait]
 impl AppHandler for AureliaAppHandler {
-    fn on_login_callback(
+    async fn on_login_callback(
         &self,
         claims: &mut JwtClaims,
         _config: &Configuration,

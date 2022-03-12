@@ -8,7 +8,7 @@ use axum::{
     {extract::Extension, response::IntoResponse, Json},
 };
 
-use hyper::header::{HeaderName, SET_COOKIE};
+use hyper::header::{HeaderName, LOCATION, SET_COOKIE};
 use openidconnect::{
     core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata, CoreTokenResponse},
     reqwest::async_http_client,
@@ -191,6 +191,7 @@ pub async fn oidc_client_login_cb(
     state
         .handlers
         .on_login_callback(&mut claims, &state.configuration, db)
+        .await
         .map_err(|e| {
             tracing::error!(
                 "on_login handler failed for claims: {:?}. Error was: {}",
@@ -200,14 +201,25 @@ pub async fn oidc_client_login_cb(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    let h = Headers(vec![(
-        SET_COOKIE,
-        format!(
-            "{}={}; path=/; HttpOnly",
-            &state.configuration.application.auth.jwt_cookie_name,
-            create_jwt_from_claims(&state.configuration, claims, None).unwrap()
+    let h = Headers(vec![
+        (
+            SET_COOKIE,
+            format!(
+                "{}={}; path=/; HttpOnly",
+                &state.configuration.application.auth.jwt_cookie_name,
+                create_jwt_from_claims(&state.configuration, claims, None).unwrap()
+            ),
         ),
-    )]);
+        (
+            LOCATION,
+            state
+                .configuration
+                .application
+                .auth
+                .redirect_on_login_success
+                .clone(),
+        ),
+    ]);
 
-    Ok((h, StatusCode::OK))
+    Ok((h, StatusCode::FOUND))
 }

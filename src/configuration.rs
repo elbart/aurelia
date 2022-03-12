@@ -61,6 +61,8 @@ pub struct Auth {
     pub jwtrsapublickey: String,
     pub path_prefix: String,
     pub oidc: HashMap<String, Oidc>,
+    pub redirect_on_login_success: String,
+    pub redirect_on_login_error: String,
 }
 
 impl std::fmt::Debug for Auth {

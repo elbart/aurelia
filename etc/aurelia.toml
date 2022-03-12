@@ -22,6 +22,8 @@ jwt_algorithm = "RS256"
 jwtrsaprivatekey = "comes_from_dotenv"
 jwtrsapublickey = "comes_from_dotenv"
 path_prefix = "/auth"
+redirect_on_login_success = "/"
+redirect_on_login_error = "/login/error"
 
 [application.auth.oidc.auth0]
 provider_name = "auth0"

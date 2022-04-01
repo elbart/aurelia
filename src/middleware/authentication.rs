@@ -55,6 +55,10 @@ impl JwtClaims {
                 + exp_offset,
         }
     }
+
+    pub fn full_name(&self) -> String {
+        format!("{} {}", self.given_name, self.family_name)
+    }
 }
 
 pub async fn jwt_auth_middleware<B>(

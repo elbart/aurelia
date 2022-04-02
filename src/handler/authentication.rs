@@ -1,14 +1,14 @@
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
 
 use anyhow::anyhow;
 use axum::{
     extract::{Path, Query},
-    http::{StatusCode, Uri},
-    response::{Headers, Redirect},
+    http::StatusCode,
+    response::Redirect,
     {extract::Extension, response::IntoResponse, Json},
 };
 
-use hyper::header::{HeaderName, LOCATION, SET_COOKIE};
+use hyper::header::{LOCATION, SET_COOKIE};
 use openidconnect::{
     core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata, CoreTokenResponse},
     reqwest::async_http_client,
@@ -93,12 +93,7 @@ pub async fn oidc_client_login(
         .add_scope(Scope::new("profile".into()))
         .url();
 
-    Ok(Redirect::to(Uri::from_str(auth_url.as_str()).map_err(
-        |e| {
-            tracing::error!("Invalid Uri error: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        },
-    )?))
+    Ok(Redirect::to(auth_url.as_str()))
 }
 
 // TODO: Actually store this nonce somewhere
@@ -116,7 +111,7 @@ pub async fn oidc_client_login_cb(
     Extension(_claims): Extension<Option<JwtClaims>>,
     Extension(state): Extension<ApplicationState>,
     Extension(db): Extension<DbPool>,
-) -> Result<(Headers<Vec<(HeaderName, std::string::String)>>, StatusCode), StatusCode> {
+) -> Result<impl IntoResponse, StatusCode> {
     tracing::info!("{:?}", query);
     let client = oidc_client(&provider_name, &state).await?;
     let code = query.get("code").ok_or_else(|| {
@@ -201,7 +196,7 @@ pub async fn oidc_client_login_cb(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    let h = Headers(vec![
+    let h = [
         (
             SET_COOKIE,
             format!(
@@ -219,7 +214,7 @@ pub async fn oidc_client_login_cb(
                 .redirect_on_login_success
                 .clone(),
         ),
-    ]);
+    ];
 
     Ok((h, StatusCode::FOUND))
 }

@@ -92,7 +92,7 @@ pub async fn require_jwt_authentication<B>(
 ) -> impl IntoResponse {
     let claims = req.extensions().get::<Option<JwtClaims>>().unwrap_or(&None);
     if claims.is_none() {
-        return Err(Redirect::to(config.auth.login_path.parse().unwrap()));
+        return Err(Redirect::to(config.auth.login_path.as_str()));
     }
 
     Ok::<_, Redirect>(next.run(req).await)

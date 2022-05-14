@@ -19,7 +19,7 @@ use openidconnect::{
 
 use crate::{
     application::ApplicationState,
-    database::DbPool,
+    driver::db,
     middleware::authentication::{create_jwt_from_claims, JwtClaims},
 };
 
@@ -110,7 +110,7 @@ pub async fn oidc_client_login_cb(
     Path(provider_name): Path<String>,
     Extension(_claims): Extension<Option<JwtClaims>>,
     Extension(state): Extension<ApplicationState>,
-    Extension(db): Extension<DbPool>,
+    Extension(db): Extension<db::DB>,
 ) -> Result<impl IntoResponse, StatusCode> {
     tracing::info!("{:?}", query);
     let client = oidc_client(&provider_name, &state).await?;

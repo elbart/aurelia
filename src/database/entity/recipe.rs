@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgRow, Row};
 use uuid::Uuid;
 
-use crate::database::DbPool;
+use crate::driver::db;
 
 use super::{ingredient::Ingredient, user::User};
 
@@ -25,7 +25,7 @@ pub struct Recipe {
 }
 
 impl Recipe {
-    pub async fn get_recipes(pool: DbPool) -> anyhow::Result<Vec<Recipe>> {
+    pub async fn get_recipes(pool: db::DB) -> anyhow::Result<Vec<Recipe>> {
         let mut recipes = sqlx::query(
             r#"SELECT
           r.id AS recipe_id,
@@ -65,7 +65,7 @@ impl Recipe {
 impl RecipeIngredient {
     pub async fn get_recipe_ingredients(
         recipes: &mut Vec<Recipe>,
-        pool: DbPool,
+        pool: db::DB,
     ) -> anyhow::Result<()> {
         for r in recipes {
             let mut recipe_ingredients: Vec<RecipeIngredient> = sqlx::query(

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use axum::{
     extract::Extension,
     middleware::{self},
@@ -7,11 +5,11 @@ use axum::{
     Router,
 };
 use hyper::StatusCode;
-use sqlx::{Pool, Postgres};
 use tower_http::services::ServeDir;
 
 use crate::{
     application::ApplicationState,
+    driver::db,
     handler::authentication::{claims, oidc_client_login, oidc_client_login_cb},
     middleware::authentication::{jwt_auth_middleware, JwtClaims},
 };
@@ -67,6 +65,15 @@ impl ApplicationRouter {
         self
     }
 
+    /// Convenience function to add an Extension to the root routing
+    pub(crate) fn with_extension<E>(mut self, ext: Extension<E>) -> Self
+    where
+        E: Clone + Sync + Send + 'static,
+    {
+        self.router = self.router.layer(ext);
+        self
+    }
+
     /// Optional extra routes given from the outside, mounted in the
     /// routing tree.
     pub(crate) fn with_extra_routes(mut self, routes: Router) -> Self {
@@ -74,7 +81,7 @@ impl ApplicationRouter {
         self
     }
 
-    pub fn finalize(self, db: Arc<Pool<Postgres>>) -> Router {
+    pub fn finalize(self, db: db::DB) -> Router {
         self.router.layer(Extension(db))
     }
 }

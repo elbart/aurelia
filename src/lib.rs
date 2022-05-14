@@ -3,6 +3,7 @@ pub mod cli;
 pub mod configuration;
 pub mod database;
 mod database_migrations;
+pub mod driver;
 mod handler;
 pub mod middleware;
 mod routes;

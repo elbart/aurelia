@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgRow, Row};
 use uuid::Uuid;
 
-use crate::database::DbPool;
+use crate::driver::db;
 
 use super::tag::Tag;
 
@@ -14,7 +14,7 @@ pub struct Ingredient {
 }
 
 impl Ingredient {
-    pub async fn fetch_tags(&mut self, pool: DbPool) -> anyhow::Result<()> {
+    pub async fn fetch_tags(&mut self, pool: db::DB) -> anyhow::Result<()> {
         self.tags = sqlx::query(
             r#"
         SELECT t.id, t.name FROM
@@ -29,14 +29,14 @@ impl Ingredient {
                 name: row.try_get("name")?,
             })
         })
-        .fetch_all(&*pool)
+        .fetch_all(pool)
         .await?;
 
         Ok(())
     }
 }
 
-pub async fn get_ingredients(pool: DbPool) -> Vec<Ingredient> {
+pub async fn get_ingredients(pool: db::DB) -> Vec<Ingredient> {
     sqlx::query("SELECT * FROM ingredient")
         .try_map(|row: PgRow| {
             Ok(Ingredient {

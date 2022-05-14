@@ -3,13 +3,14 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use axum::routing::IntoMakeService;
-use axum::{Router, Server};
+use axum::{Extension, Router, Server};
 use dyn_clonable::clonable;
 use hyper::server::conn::AddrIncoming;
 
 use crate::configuration::{self, Configuration};
-use crate::database::{init_connection, DbPool};
+use crate::database::init_connection;
 
+use crate::driver::db;
 use crate::middleware::authentication::JwtClaims;
 use crate::routes::{self, ApplicationRouter};
 
@@ -20,7 +21,7 @@ pub trait AppHandler: std::fmt::Debug + Clone + Send + Sync {
         &self,
         claims: &mut JwtClaims,
         config: &Configuration,
-        db: DbPool,
+        db: db::DB,
     ) -> anyhow::Result<()>;
 }
 
@@ -33,7 +34,7 @@ impl AppHandler for AureliaAppHandler {
         &self,
         claims: &mut JwtClaims,
         _config: &Configuration,
-        _db: DbPool,
+        _db: db::DB,
     ) -> anyhow::Result<()> {
         tracing::info!("This is the On Login Callback for the claims: {:?}", claims);
         Ok(())
@@ -106,8 +107,16 @@ impl Application {
         self
     }
 
+    pub fn with_extension<E>(mut self, ext: Extension<E>) -> Self
+    where
+        E: Clone + Sync + Send + 'static,
+    {
+        self.router = self.router.with_extension(ext);
+        self
+    }
+
     pub async fn prepare(self) -> Result<PreparedApplication, hyper::Error> {
-        let db = Arc::new(init_connection(&self.state.configuration).await);
+        let db = init_connection(&self.state.configuration).await;
 
         let addr = SocketAddr::from((
             self.state.configuration.http.address,

@@ -5,21 +5,7 @@ use refinery::{
     config::{Config, ConfigDbType},
     Runner,
 };
-use structopt::StructOpt;
 use uuid::Uuid;
-
-#[derive(Debug, StructOpt)]
-#[structopt(name = "CLI client", about = "Command line interface")]
-pub struct Cli {
-    #[structopt(subcommand)]
-    pub cmd: Command,
-}
-
-#[derive(Debug, StructOpt)]
-pub enum Command {
-    Migrate,
-    CreateJWT,
-}
 
 pub async fn cli_migrate_database<A>(cfg: &Configuration, runner: A) -> Result<()>
 where

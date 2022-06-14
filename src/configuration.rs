@@ -57,8 +57,8 @@ pub struct Auth {
     pub jwt_header_name: String,
     pub jwt_cookie_name: String,
     pub jwt_algorithm: String,
-    pub jwtrsaprivatekey: String,
-    pub jwtrsapublickey: String,
+    pub jwt_rsa_private_key: String,
+    pub jwt_rsa_public_key: String,
     pub path_prefix: String,
     pub oidc: HashMap<String, Oidc>,
     pub redirect_on_login_success: String,
@@ -77,8 +77,8 @@ impl std::fmt::Debug for Auth {
             .field("jwt_header_name", &self.jwt_header_name)
             .field("jwt_cookie_name", &self.jwt_cookie_name)
             .field("jwt_algorithm", &self.jwt_algorithm)
-            .field("jwtrsaprivatekey", &"***")
-            .field("jwtrsapublickey", &"***")
+            .field("jwt_rsa_private_key", &"***")
+            .field("jwt_rsa_public_key", &"***")
             .field("path_prefix", &self.path_prefix)
             .field("oidc", &self.oidc)
             .finish()
@@ -129,12 +129,12 @@ where
 }
 
 impl Configuration {
-    /// 1. File ``etc/aurelia.toml``,
+    /// 1. File ``etc/aurelia.toml`` (optional),
     /// 2. Env with prefix ``AURELIA_``.
     pub fn new() -> Result<Self, ConfigError> {
         let d = Config::builder()
-            .add_source(File::with_name("etc/aurelia.toml"))
-            .add_source(Environment::with_prefix("AURELIA").separator("_"))
+            .add_source(File::with_name("etc/aurelia.toml").required(false))
+            .add_source(Environment::with_prefix("AURELIA").separator("__"))
             .build()?;
 
         d.try_deserialize()

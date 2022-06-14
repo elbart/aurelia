@@ -171,7 +171,7 @@ pub(crate) async fn jwt_authentication<ReqBody>(
 async fn verify_token(token: &str, app_config: &Application) -> Result<TokenData<JwtClaims>> {
     let token = decode::<JwtClaims>(
         token,
-        &DecodingKey::from_rsa_pem(app_config.auth.jwtrsapublickey.as_bytes())?,
+        &DecodingKey::from_rsa_pem(app_config.auth.jwt_rsa_public_key.as_bytes())?,
         &Validation::new(Algorithm::from_str(&app_config.auth.jwt_algorithm)?),
     )?;
 
@@ -190,7 +190,7 @@ pub(crate) fn create_jwt_from_claims(
     };
 
     if rsa {
-        let key = EncodingKey::from_rsa_pem(cfg.application.auth.jwtrsaprivatekey.as_bytes())?;
+        let key = EncodingKey::from_rsa_pem(cfg.application.auth.jwt_rsa_private_key.as_bytes())?;
         encode(&Header::new(Algorithm::RS256), &claims, &key).map_err(Into::into)
     } else {
         let key = EncodingKey::from_secret(cfg.application.auth.jwt_secret.as_ref());

@@ -18,7 +18,7 @@ where
     T: TestClient,
 {
     Lazy::force(&TRACING);
-    let mut test_cfg = configuration::Configuration::new()?;
+    let mut test_cfg = configuration::Configuration::new(None)?;
     test_cfg.http.port = 0;
 
     let app =

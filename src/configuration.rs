@@ -131,9 +131,13 @@ where
 impl Configuration {
     /// 1. File ``etc/aurelia.toml`` (optional),
     /// 2. Env with prefix ``AURELIA_``.
-    pub fn new() -> Result<Self, ConfigError> {
+    pub fn new(config_file: Option<String>) -> Result<Self, ConfigError> {
+        let config_file = config_file.unwrap_or_else(|| {
+            std::env::var("AURELIA_CONFIG_PATH").unwrap_or("etc/aurelia.toml".into())
+        });
+
         let d = Config::builder()
-            .add_source(File::with_name("etc/aurelia.toml").required(false))
+            .add_source(File::with_name(&config_file).required(false))
             .add_source(Environment::with_prefix("AURELIA").separator("__"))
             .build()?;
 

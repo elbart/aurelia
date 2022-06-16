@@ -76,7 +76,7 @@ impl Application {
 
         let app_state;
         if cfg.is_none() {
-            app_state = ApplicationState::new(configuration::Configuration::new()?, handlers);
+            app_state = ApplicationState::new(configuration::Configuration::new(None)?, handlers);
             tracing::info!("Parsed configuration: {:?}", app_state.configuration);
         } else {
             app_state = ApplicationState::new(cfg.unwrap(), handlers);

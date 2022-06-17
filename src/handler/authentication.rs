@@ -16,6 +16,7 @@ use openidconnect::{
     EndUserGivenName, EndUserPictureUrl, IssuerUrl, LocalizedClaim, Nonce, NonceVerifier,
     RedirectUrl, Scope,
 };
+use tracing::debug;
 
 use crate::{
     application::ApplicationState,
@@ -196,15 +197,23 @@ pub async fn oidc_client_login_cb(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
+    let cookie = format!(
+        "{}={}; path=/; HttpOnly; SameSite=lax{}",
+        &state.configuration.application.auth.jwt_cookie_name,
+        create_jwt_from_claims(&state.configuration, claims, None).unwrap(),
+        &state
+            .configuration
+            .application
+            .auth
+            .jwt_cookie_secure
+            .then(|| "; secure;")
+            .unwrap_or(";")
+    );
+
+    debug!("Setting cookie: '{}'", cookie);
+
     let h = [
-        (
-            SET_COOKIE,
-            format!(
-                "{}={}; path=/; HttpOnly",
-                &state.configuration.application.auth.jwt_cookie_name,
-                create_jwt_from_claims(&state.configuration, claims, None).unwrap()
-            ),
-        ),
+        (SET_COOKIE, cookie),
         (
             LOCATION,
             state

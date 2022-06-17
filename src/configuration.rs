@@ -56,6 +56,7 @@ pub struct Auth {
     pub jwt_expiration_offset_seconds: usize,
     pub jwt_header_name: String,
     pub jwt_cookie_name: String,
+    pub jwt_cookie_secure: bool,
     pub jwt_algorithm: String,
     pub jwt_rsa_private_key: String,
     pub jwt_rsa_public_key: String,
@@ -76,11 +77,15 @@ impl std::fmt::Debug for Auth {
             )
             .field("jwt_header_name", &self.jwt_header_name)
             .field("jwt_cookie_name", &self.jwt_cookie_name)
+            .field("jwt_cookie_secure", &self.jwt_cookie_secure)
             .field("jwt_algorithm", &self.jwt_algorithm)
             .field("jwt_rsa_private_key", &"***")
             .field("jwt_rsa_public_key", &"***")
             .field("path_prefix", &self.path_prefix)
             .field("oidc", &self.oidc)
+            .field("redirect_on_login_success", &self.redirect_on_login_success)
+            .field("redirect_on_login_error", &self.redirect_on_login_error)
+            .field("login_path", &self.login_path)
             .finish()
     }
 }

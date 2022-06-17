@@ -18,6 +18,7 @@ jwt_secret = "TQgF1LMRwGVyH4XLZhak3hnlvxVCtWuuCY0E8GwcEdZpds2vBe5F47U3wEij32sPqu
 jwt_expiration_offset_seconds = 1000000
 jwt_header_name = "authorization"
 jwt_cookie_name = "id_token"
+jwt_cookie_secure = false # set to true on https sites
 jwt_algorithm = "RS256"
 jwt_rsa_private_key = "comes_from_dotenv"
 jwt_rsa_public_key = "comes_from_dotenv"

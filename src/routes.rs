@@ -81,6 +81,14 @@ impl ApplicationRouter {
         self
     }
 
+    /// Optionally allow HTTP Request/Response tracing using `tower_http::trace::TraceLayer`
+    pub(crate) fn with_trace_layer(mut self) -> Self {
+        self.router = self.router.layer(
+            tower::ServiceBuilder::new().layer(tower_http::trace::TraceLayer::new_for_http()),
+        );
+        self
+    }
+
     pub fn finalize(self, db: db::DB) -> Router {
         self.router.layer(Extension(db))
     }

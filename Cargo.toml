@@ -35,7 +35,7 @@ tera = "1.15"
 tokio = { version = "1.18", features = ["full"] }
 toml = "0.5"
 tower = "0.4"
-tower-http = { version = "0.3", features = ["fs"]}
+tower-http = { version = "0.3", features = ["fs", "trace"]}
 tracing = { version = "0.1" }
 tracing-bunyan-formatter = "0.3"
 tracing-log = "0.1"

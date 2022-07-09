@@ -107,6 +107,11 @@ impl Application {
         self
     }
 
+    pub fn with_trace_layer(mut self) -> Self {
+        self.router = self.router.with_trace_layer();
+        self
+    }
+
     pub fn with_extension<E>(mut self, ext: Extension<E>) -> Self
     where
         E: Clone + Sync + Send + 'static,

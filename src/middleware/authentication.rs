@@ -59,6 +59,11 @@ impl JwtClaims {
     pub fn full_name(&self) -> String {
         format!("{} {}", self.given_name, self.family_name)
     }
+
+    pub fn is_user(&self, user_id: &uuid::Uuid) -> Result<bool> {
+        let claim_id = uuid::Uuid::from_str(&self.sub)?;
+        Ok(&claim_id == user_id)
+    }
 }
 
 pub async fn jwt_auth_middleware<B>(

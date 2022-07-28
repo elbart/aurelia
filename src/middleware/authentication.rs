@@ -64,6 +64,10 @@ impl JwtClaims {
         let claim_id = uuid::Uuid::from_str(&self.sub)?;
         Ok(&claim_id == user_id)
     }
+
+    pub fn user_id(&self) -> Result<uuid::Uuid> {
+        Ok(uuid::Uuid::from_str(&self.sub)?)
+    }
 }
 
 pub async fn jwt_auth_middleware<B>(
